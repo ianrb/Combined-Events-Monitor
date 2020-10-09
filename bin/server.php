@@ -121,12 +121,9 @@ class DSDServer
         $secure_websockets_server->run();
     }
 
+    // Implmented/Not Used - DSD+ Already Renames Log - This could be used for JS/Client Side UI
     function loadDSDConfig()
     {
-
-        // array("groups" => $this->objServer->DSDConfig);
-
-
         // Groups
         $groups = [];
         $strFileContents = file_get_contents("$this->DSDPlusFolder/DSDPlus.groups", "r");
@@ -170,6 +167,7 @@ class DSDServer
     }
 
 
+    // Read LRRP file line by line to build an array of valid events
     function getDSDPlusLRRP($instance)
     {
 
@@ -223,26 +221,18 @@ class DSDServer
         return $events;
     }
 
+    // Read event file line by line to build an array of valid events
     function getDSDPlusEvents($instance)
     {
 
         try {
 
             $events = array();
-
             $dsdinstance = ($instance + 1);
-
             $path = "$this->DSDPlusFolder/VC-DSDPlus#${dsdinstance}.event";
-
             $strFileContents = file_get_contents($path, "r");
 
-            $lines = [
-                explode(
-                    // "\r\n",
-                    "\n",
-                    $strFileContents
-                )
-            ];
+            $lines = [explode("\n", $strFileContents)];
 
             // Line by Line Fixes
             $lines = explode("\n", $strFileContents);
@@ -270,7 +260,6 @@ class DSDServer
 
                 $message = [$date, $tg, $rid, $slot, $duration];
 
-                // echo "cidx: " . $icnt . " - lc: " . $this->lastCount[$instance];
                 // New Events
                 if ($icnt >= $this->lastCount[$instance]) {
                     foreach ($this->eventProcessor->clients as $client) {
@@ -296,16 +285,14 @@ class DSDServer
         return $events;
     }
 
+    // Read recording directories file by  file to build an array of valid events
     function getFileEvents($instance, $name)
     {
         $path = $this->FileEventsPath . $name . '/';
         $events = array();
         $icnt = 0;
-
         $files = scandir($path);
         natcasesort($files);
-
-        echo "\n\n\n\n\n\n\n\nfile event File order: " . print_r($files);
 
         foreach ($files as $index => $file) {
 
@@ -338,6 +325,7 @@ class DSDServer
         return $events;
     }
 
+    // Read rtl_433 JSON events file
     function getRtl433Events($instance)
     {
         $events = array();
@@ -408,6 +396,8 @@ class DSDServer
     }
 }
 
-// Load Class
+// 
+// 
+// Load Class and Start
 $objDSDServer = new DSDServer();
 $objDSDServer->start();

@@ -19,7 +19,7 @@ Features:
 - New Events are highlighted until and time refereed in seconds ago until the duration of call is complete in which case the call is considered ‘read’ and highlighting is removed and date stamp matches older events
 
 
-- Options -> Mute All is self explanatory.
+- Mute All - is self explanatory.
  
 
 Notes specific to software
@@ -32,4 +32,4 @@ Sox and Play
 
 
 rtl_433
-- Often door sensors send out repeated events for one occurrence which floods the messages with unnecessary info and makes it hard to see other events. As as a simple fix, any event with the same id, state and within the same 3 seconds are excluded.
+- Often door sensors send out repeated events for one occurrence which floods the messages with unnecessary info and makes it hard to see other events. As as a simple fix, any event with the same id, state and within the same 3 seconds is excluded.
