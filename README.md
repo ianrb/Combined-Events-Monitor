@@ -2,10 +2,10 @@
 
 Combined Events Monitor was created as a means to combine DSD+, WAV file recordings, rtl_433 JSON logs and more into remotely accessible, simple web page.
 
-This project lacks full documentation and is for offered for review and information. I’ll do my best to make updates – but this is only one side-project of many.
+This project lacks full documentation and is offered for review and information. I’ll do my best to make updates – but this is only one side-project of many.
 
 
-A few prerequisites are Apache2, PHP 7, rtl_fm, sox, play Ratchet - http://socketo.me/
+A few prerequisites are Apache2, PHP 7, rtl_fm, sox, play, Ratchet - http://socketo.me/
 
 
 Features:
