@@ -1,0 +1,75 @@
+:root {
+    --primary-color: #2c003ab8;
+    --secondary-color: #9c0fbf;
+    /*  */
+    --navbar-background-color: #2c003ab8;
+    --box-gradient-top: #8a0fbd;
+    --box-gradient-bottom: #9c0fbf;
+    --icon-color: #fff;
+}
+
+body {
+    background-image: url(../img/radio.jpg);
+    background-size: cover;
+    padding-top: 4.5rem;
+    padding-bottom: 4.5rem;
+    color: #fff;
+    /* animation: animation-background 45s 1s infinite; */
+}
+
+
+/*  */
+
+.noselect {
+    -webkit-touch-callout: none;
+    /* iOS Safari */
+    -webkit-user-select: none;
+    /* Safari */
+    -khtml-user-select: none;
+    /* Konqueror HTML */
+    -moz-user-select: none;
+    /* Old versions of Firefox */
+    -ms-user-select: none;
+    /* Internet Explorer/Edge */
+    user-select: none;
+}
+
+
+/* scrollbar */
+
+::-webkit-scrollbar {
+    width: .5rem;
+}
+
+ ::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 5px var(--navbar-background-color);
+    border-radius: 10px;
+}
+
+ ::-webkit-scrollbar-thumb {
+    background: var(--navbar-background-color);
+    border-radius: 10px;
+}
+
+
+/* Background Image */
+
+@keyframes animation-background {
+    0% {
+        filter: hue-rotate(30deg);
+    }
+    100% {
+        filter: hue-rotate(360deg);
+    }
+}
+
+
+/* 
+navbar
+ */
+
+.navbar-brand {
+    width: 100%;
+    position: fixed;
+    text-align: center;
+}

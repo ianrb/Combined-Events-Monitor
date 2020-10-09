@@ -1,0 +1,98 @@
+.bg-dark {
+    background-color: var(--navbar-background-color) !important;
+}
+
+.col-lg-6,
+.col-xl-4 {
+    padding: 1rem;
+}
+
+
+/* cards */
+
+.card {
+    background-color: #5d2876bf;
+}
+
+.card-title {
+    margin: 0;
+}
+
+.card-body {
+    height: 450px;
+    padding: 0;
+    background-color: unset;
+}
+
+.card-header {
+    background: linear-gradient(180deg, var(--box-gradient-top), var(--box-gradient-bottom));
+    padding: .25rem;
+}
+
+.card-footer {
+    background: linear-gradient(180deg, var(--box-gradient-top), var(--box-gradient-bottom));
+    padding: .25rem;
+}
+
+.events {
+    /* font-size: .7rem; */
+    text-align: left;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.badge {
+    opacity: .8;
+    /* font-size: .9rem; */
+}
+
+.badge-message {
+    cursor: pointer;
+    margin: 0.5rem;
+}
+
+.badge {
+    /* font-size: 1rem; */
+    font-size: .8rem;
+}
+
+.badge-duration {
+    background: #505050;
+    float: right;
+    writing-mode: vertical-rl;
+}
+
+#map {
+    z-index: 900;
+    height: 100%;
+    width: 100%;
+}
+
+.mapboxgl-control-container,
+.mapboxgl-popup-content {
+    background-color: var(--primary-color) !important;
+    --darkreader-inline-bgcolor: #fff;
+}
+
+.fas-card-header {
+    color: var(--icon-color);
+    height: 2rem;
+    width: 2rem;
+    position: absolute;
+    top: .0rem;
+    right: .50rem;
+}
+
+select.form-control {
+    height: calc(1.5rem);
+    padding: 0;
+    color: var(--icon-color);
+    background-color: var(--navbar-background-color);
+}
+
+
+/*  */
+
+.badge-info {
+    background: #1c0425d6;
+}
