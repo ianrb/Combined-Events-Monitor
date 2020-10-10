@@ -3,8 +3,10 @@
 namespace DSDPlus;
 
 require_once __DIR__ . "/../vendor/autoload.php";
+require_once __DIR__ . "/../src/config.php";
 require_once __DIR__ . "/../src/eventprocessor.php";
 
+use AppConfig;
 use Ratchet\Http\HttpServer;
 use Ratchet\WebSocket\WsServer;
 use Ratchet\Http\Router;
@@ -17,6 +19,7 @@ class DSDServer
 {
     public $eventProcessor;
 
+    public $config;
     public $isDebug;
 
     public $lastCount = array(0, 0, 0, 0, 0, 0);
@@ -24,18 +27,16 @@ class DSDServer
     // DSD Config
     public $DSDConfig = array();
     public $DDSEvents = array();
+    public $DDSLRRPEvents = array();
     public $DDSTotalInstances = 2;
-    public $DSDPlusFolder = "/home/sdr/Desktop/DSDPlus v2.268/";
 
     // File Events (rtl_fm / sox)
     public $FileEvents = array();
     public $FileTotalInstances = 2;
-    public $FileEventsPath = "/home/sdr/Desktop/Recordings/";
 
     // rtl_433
     public $Rtl433TotalInstances = 1;
     public $Rtl433Events = array();
-    public $Rtl433Path = "/home/sdr/Desktop/Recordings/rtl_433/";
 
 
 
@@ -49,14 +50,10 @@ class DSDServer
 
     function start()
     {
-        $this->isDebug = (gethostname() == 'Mother-Goose');
+        $this->config = new AppConfig();
 
-        if ($this->isDebug) {
-            $this->DSDPlusFolder = "/home/ian/Documents/Projects/CEM/";
-            $this->Rtl433Path = "/home/ian/Desktop/";
-        }
 
-        $address = ($this->isDebug ? "192.168.0.150" : "josieinthedark.ddns.net");
+        $address = $this->config->ServerAddress;
 
         $this->eventProcessor = new EventProcessor;
         $this->eventProcessor->objServer = $this;
@@ -76,16 +73,13 @@ class DSDServer
             array('GET')
         ));
 
-        $localCert = "/etc/apache2/ssl/server.crt";
-        $localPk = "/etc/apache2/ssl/server.key";
-
         $app = new HttpServer(new Router(new UrlMatcher($routes, new RequestContext)));
 
         $secure_websockets = new \React\Socket\Server('0.0.0.0:8080', $loop);
         $secure_websockets = new \React\Socket\SecureServer($secure_websockets, $loop, [
 
-            'local_cert'        => $localCert,
-            'local_pk'          => $localPk,
+            'local_cert'        => $this->config->SSLCertificate,
+            'local_pk'          => $this->config->SSLKey,
             // Allow self signed certs (should be false in production)
             // 'allow_self_signed' => true,
             'verify_peer' => FALSE
@@ -107,7 +101,7 @@ class DSDServer
             }
 
             // LRRP
-            $this->DDSEvents[2] = $this->getDSDPlusLRRP(2);
+            $this->DDSLRRPEvents = $this->getDSDPlusLRRP(2);
 
             // File Events
             $this->FileEvents[0] = $this->getFileEvents(3, "CN");
@@ -126,7 +120,7 @@ class DSDServer
     {
         // Groups
         $groups = [];
-        $strFileContents = file_get_contents("$this->DSDPlusFolder/DSDPlus.groups", "r");
+        $strFileContents = file_get_contents($this->config->DSDPlusFolder . "DSDPlus.groups", "r");
         $lines = explode("\n", $strFileContents);
         foreach ($lines as $index => $line) {
             if ($line == null || strncmp($line, ';', 1) == 0) {
@@ -145,7 +139,7 @@ class DSDServer
 
         // Radios
         $radios = [];
-        $strFileContents = file_get_contents("$this->DSDPlusFolder/DSDPlus.radios", "r");
+        $strFileContents = file_get_contents($this->config->DSDPlusFolder . "DSDPlus.radios", "r");
         $lines = explode("\n", $strFileContents);
         foreach ($lines as $index => $line) {
             if ($line == null || strncmp($line, ';', 1) == 0) {
@@ -170,12 +164,17 @@ class DSDServer
     // Read LRRP file line by line to build an array of valid events
     function getDSDPlusLRRP($instance)
     {
-
         try {
 
-            $events = array();
+            $path = $this->config->DSDPlusFolder . "DSDPlus.LRRP";
 
-            $strFileContents = file_get_contents("$this->DSDPlusFolder/DSDPlus.LRRP", "r");
+            if (!file_exists($path)) {
+                echo "\nSkipping non-existent file/directory: $path";
+                return;
+            }
+
+            $events = array();
+            $strFileContents = file_get_contents($path, "r");
             $strFileContents = str_replace("       ", " ", $strFileContents);
             $strFileContents = str_replace("  ", " ", $strFileContents);
             $strFileContents = str_replace("\t", " ", $strFileContents);
@@ -227,9 +226,15 @@ class DSDServer
 
         try {
 
-            $events = array();
+            $events = array([]);
             $dsdinstance = ($instance + 1);
-            $path = "$this->DSDPlusFolder/VC-DSDPlus#${dsdinstance}.event";
+            $path = $this->config->DSDPlusFolder . "VC-DSDPlus#${dsdinstance}.event";
+
+            if (!file_exists($path)) {
+                echo "\nSkipping non-existent file/directory: $path";
+                return;
+            }
+
             $strFileContents = file_get_contents($path, "r");
 
             $lines = [explode("\n", $strFileContents)];
@@ -285,11 +290,17 @@ class DSDServer
         return $events;
     }
 
-    // Read recording directories file by  file to build an array of valid events
+    // Read recording directories file by file to build an array of valid events
     function getFileEvents($instance, $name)
     {
-        $path = $this->FileEventsPath . $name . '/';
-        $events = array();
+        $path = $this->config->FileEventsPath . $name . '/';
+
+        if (!file_exists($path)) {
+            echo "\nSkipping non-existent file/directory: $path";
+            return;
+        }
+
+        $events = array([]);
         $icnt = 0;
         $files = scandir($path);
         natcasesort($files);
@@ -328,10 +339,16 @@ class DSDServer
     // Read rtl_433 JSON events file
     function getRtl433Events($instance)
     {
-        $events = array();
-        $icnt = 0;
+        $path = $this->config->Rtl433Path .  "rtl_345.json";
 
-        $strFileContents = file_get_contents($this->Rtl433Path .  "rtl_345.json", "r");
+        if (!file_exists($path)) {
+            echo "\nSkipping non-existent file/directory: $path";
+            return;
+        }
+
+        $icnt = 0;
+        $events = array([]);
+        $strFileContents = file_get_contents($path, "r");
         $strFileContents = str_replace("\n", ",", $strFileContents);
         $strFileContents = substr($strFileContents, 0, strlen($strFileContents) - 1);
         $strFileContents = '[' . $strFileContents . ']';

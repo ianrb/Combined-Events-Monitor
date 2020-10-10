@@ -1,17 +1,43 @@
-const socket = new WebSocket('wss://josieinthedark.ddns.net:8080/events');
+var isDebug = hid_isDebug.value,
+    AuthRequired = hid_AuthRequired.value,
+    AuthUsername, AuthPassword;
 
+if (AuthRequired) {
+    var AuthUsername = hid_AuthUsername.value,
+        AuthPassword = hid_AuthPassword.value;
+}
+
+
+var WebSocketAdress = "wss://josieinthedark.ddns.net:8080/events";
+if (isDebug) {
+    // WebSocketAdress = "wss://192.168.0.150:8080/events";
+}
+
+// Append token,username,password to socket address if authorisation is required
+if (AuthRequired) {
+    WebSocketAdress = WebSocketAdress + ('?payload=' + encodeURIComponent(btoa('token=AnyStringYouWantPasswedToSocket&username=' + AuthUsername + '&password=' + AuthPassword)));
+}
+
+const socket = new WebSocket(WebSocketAdress);
+
+
+// Date Time Formatting for Messages
 var strDateTimeFormat = "MMM Do - HH:mm:ss";
+
+// Mapbox Access Token - Free for small scale projects https://account.mapbox.com/auth/signup/
+var mapboxAcessToken = "pk.eyJ1IjoiaWFucmJvd21hbiIsImEiOiJjazdvejVjejQwMThhM2VvM3RibXZiOWl5In0.vv7zkuH0TJw5r_g4YdAL1A";
+
 // var strDateTimeFormat = "ddd, MMM Do - HH:mm:ss";
 
+// Audio Player - also instances use one player
 var audioPlayer = new Audio();
 audioPlayer.pause();
-var autoplayStreams = [true, true, true, true];
-var muteAll = false;
+var autoplayStreams = [true, true, true, true],
+    muteAll = false;
 
 // Map
-var map;
-var markers = [];
-var map3d = false;
+var map, map3d = false,
+    markers = [];;
 
 
 // DSD+
@@ -451,7 +477,7 @@ function readWaveFile(file) {
 
 function loadLRRPMap() {
 
-    mapboxgl.accessToken = 'pk.eyJ1IjoiaWFucmJvd21hbiIsImEiOiJjazdvejVjejQwMThhM2VvM3RibXZiOWl5In0.vv7zkuH0TJw5r_g4YdAL1A';
+    mapboxgl.accessToken = mapboxAcessToken;
     map = new mapboxgl.Map({
         container: 'map',
         center: [-116.4336, 53.5850],

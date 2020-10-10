@@ -1,3 +1,22 @@
+<?php
+
+require_once __DIR__ . "/src/config.php";
+
+$config = new AppConfig();
+
+// If Authentication Required is true and Username or Password do match - redirect to login
+if ($config->AuthRequired) {
+    session_start();
+    $username = $_SESSION['username'];
+    $password = $_SESSION['password'];
+
+    if ($username != $config->AuthUsername | $password != $config->AuthPassword) {
+        header("location: login.php");
+    }
+}
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -6,7 +25,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
     <meta name="author" content="Ian Bowman">
-    <title>Combined Events Monitor</title>
+
+    <title><?php echo $config->WebsiteName ?></title>
+
+
+    <?php
+    function echoAttr($name, $val)
+    {
+        echo "\n<input type=\"hidden\" id=\"hid_$name\" value=\"$val\">";
+    }
+    echoAttr("isDebug", $config->isDebug);
+    echoAttr("AuthRequired", $config->AuthRequired);
+    if ($config->AuthRequired) {
+        echoAttr("AuthUsername", $config->AuthUsername);
+        echoAttr("AuthPassword", $config->AuthPassword);
+    }
+
+    ?>
+
+
     <link rel="icon" href="favicon.ico">
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/all.min.css">
@@ -28,7 +65,7 @@
     <script src='https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css' rel='stylesheet' />
 
-
+    <!-- code for this project -->
     <script src="/js/script.js?cb=257"></script>
 
 </head>
@@ -38,14 +75,15 @@
 
 
     <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
-        <a class="navbar-brand" href="#">COMBINED EVENTS MONITOR</a>
+        <a class="navbar-brand" href="#"><?php echo $config->WebsiteName ?></a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
         <div class="collapse navbar-collapse" id="main-nav">
             <ul class="navbar-nav ml-auto">
-                <!-- <li class="nav-item active">
+                <!--
+                     <li class="nav-item active">
                     <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
                 </li> 
                 <li class="nav-item">
@@ -62,7 +100,15 @@
                     <a class="nav-link dropdown-toggle" href="#" id="dropdown01" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Options</a>
                     <div class="dropdown-menu" aria-labelledby="dropdown01">
                         <a class="dropdown-item" href="#mute-all">Mute All</a>
+
+                        <?php if ($config->AuthRequired) {
+                            echo '<div class="dropdown-divider"></div> <a class="dropdown-item" href="logout.php">Logout</a>';
+                        } ?>
+
                     </div>
+
+
+
                 </li>
             </ul>
             <!-- <form class="form-inline my-2 my-lg-0">
