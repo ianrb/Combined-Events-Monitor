@@ -27,8 +27,8 @@ class AppConfig
     // Authentication
     // 
     public $AuthRequired = true;
-    public $AuthUsername = "josie";
-    public $AuthPassword = "testing";
+    public $AuthUsername = "xo";
+    public $AuthPassword = "toto";
 
     // 
     // SSL Certificate
