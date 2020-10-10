@@ -10,7 +10,7 @@ if (AuthRequired) {
 
 var WebSocketAdress = "wss://josieinthedark.ddns.net:8080/events";
 if (isDebug) {
-    // WebSocketAdress = "wss://192.168.0.150:8080/events";
+    WebSocketAdress = "wss://192.168.0.150:8080/events";
 }
 
 // Append token,username,password to socket address if authorisation is required
