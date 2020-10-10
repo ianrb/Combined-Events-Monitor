@@ -15,7 +15,7 @@ if (isDebug) {
 
 // Append token,username,password to socket address if authorisation is required
 if (AuthRequired) {
-    WebSocketAdress = WebSocketAdress + ('?payload=' + encodeURIComponent(btoa('token=AnyStringYouWantPasswedToSocket&username=' + AuthUsername + '&password=' + AuthPassword)));
+    WebSocketAdress = WebSocketAdress + ('?payload=' + encodeURIComponent(btoa('token=AnyStringYouWantPassedToSocket&username=' + AuthUsername + '&password=' + AuthPassword)));
 }
 
 const socket = new WebSocket(WebSocketAdress);
@@ -89,7 +89,6 @@ socket.addEventListener('message', function(event) {
 
         processDsdEvent(strCssClass, event.event, true);
 
-
         // Autoscroll
         if (autoplayStreams[event.instance]) {
             $(strCssClass).scrollTop($(strCssClass).prop('scrollHeight'));
@@ -101,28 +100,23 @@ socket.addEventListener('message', function(event) {
 
     }
 
-    if (event.cmd == 'DSDLRRP') {
 
-        var speed = event.event[5];
-        var heading = event.event[6];
-
-        var popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
-            `<b>${event.event[2]}</b><br>${event.event[1]} <br> ${event.event[3]}, ${event.event[4]} <br> Speed: ${speed} km/h<br>Heading: ${heading}°`
-        );
-
-        if (markers[event.event[2]]) {
-            // markers[event.event[2]].setIcon('popup');
-            markers[event.event[2]].setPopup(popup);
-            markers[event.event[2]].setLngLat([event.event[4], event.event[3]]);
-        } else {
-            markers[event.event[2]] = new mapboxgl.Marker();
-            markers[event.event[2]].setPopup(popup);
-            markers[event.event[2]].setLngLat([event.event[4], event.event[3]]);
-            markers[event.event[2]].addTo(map);
+    // Recent LRRP Events
+    if (event.cmd == 'DSDRecentLRRP') {
+        for (var i in event.events) {
+            processLRRPEvent(event.events[i]);
         }
-
     }
 
+    // New LRRP Event
+    if (event.cmd == 'DSDLRRP') {
+        processLRRPEvent(event.event);
+    }
+
+
+    // 
+    // File Events
+    // 
 
     strCssClass = '#FileEvent' + event.instance + ' .events';
 
@@ -178,6 +172,26 @@ function processDsdEvent(strCssClass, event, newEvent = false) {
         }
     });
 
+}
+
+function processLRRPEvent(event) {
+
+    var speed = event[5];
+    var heading = event[6];
+
+    var popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
+        `<b>${event[2]}</b><br>${event[1]} <br> ${event[3]}, ${event[4]} <br> Speed: ${speed} km/h<br>Heading: ${heading}°`
+    );
+
+    if (markers[event[2]]) {
+        markers[event[2]].setPopup(popup);
+        markers[event[2]].setLngLat([event[4], event[3]]);
+    } else {
+        markers[event[2]] = new mapboxgl.Marker();
+        markers[event[2]].setPopup(popup);
+        markers[event[2]].setLngLat([event[4], event[3]]);
+        markers[event[2]].addTo(map);
+    }
 }
 
 function processFileEvent(strCssClass, event, instance, newEvent = false) {

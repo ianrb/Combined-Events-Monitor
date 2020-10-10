@@ -92,7 +92,7 @@ class DSDServer
         $this->DSDConfig = $this->loadDSDConfig();
 
 
-        $loop->addPeriodicTimer(5, function () {
+        $loop->addPeriodicTimer($this->config->UpdateFrequency, function () {
 
             // Check for DSD Updates
             $iDSD = ($this->DDSTotalInstances - 1);

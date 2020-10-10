@@ -17,6 +17,10 @@ class EventProcessor implements MessageComponentInterface
         echo "DSD Server Started.\n";
     }
 
+    // 
+    // New WebSocket Connection Opened
+    // 
+
     public function onOpen(ConnectionInterface $conn)
     {
 
@@ -68,7 +72,7 @@ class EventProcessor implements MessageComponentInterface
             ]));
 
 
-            // New Client - Send recent DSD+ Events
+            // Recent DSD+ Events
             $iDSD = ($this->objServer->DDSTotalInstances - 1);
             for ($instance = 0; $instance <= $iDSD; $instance++) {
 
@@ -76,7 +80,7 @@ class EventProcessor implements MessageComponentInterface
 
                     if (($this->objServer->DDSEvents[$instance])) {
 
-                        $recentEvents = array_slice($this->objServer->DDSEvents[$instance], -200, 200);
+                        $recentEvents = array_slice($this->objServer->DDSEvents[$instance], -$this->objServer->config->RecentEvents, $this->objServer->config->RecentEvents);
 
                         $conn->send(json_encode([
                             "cmd"   => "DSDEvents",
@@ -85,6 +89,18 @@ class EventProcessor implements MessageComponentInterface
                         ]));
                     }
                 }
+            }
+
+            // DSD Recent LRRP
+
+            if (($this->objServer->DDSLRRPEvents)) {
+
+                $recentEvents = array_slice($this->objServer->DDSLRRPEvents, -$this->objServer->config->RecentEvents, $this->objServer->config->RecentEvents);
+
+                $conn->send(json_encode([
+                    "cmd"   => "DSDRecentLRRP",
+                    "events" => $recentEvents
+                ]));
             }
 
 
@@ -96,7 +112,7 @@ class EventProcessor implements MessageComponentInterface
 
                     if (($this->objServer->FileEvents[$instance])) {
 
-                        $recentEvents = array_slice($this->objServer->FileEvents[$instance], -200, 200);
+                        $recentEvents = array_slice($this->objServer->FileEvents[$instance], -$this->objServer->config->RecentEvents, $this->objServer->config->RecentEvents);
 
                         $conn->send(json_encode([
                             "cmd"   => "FileEvents",
@@ -109,9 +125,9 @@ class EventProcessor implements MessageComponentInterface
 
 
             // New Client - Send recent rtl_433 Events
-            if ($instance < count($this->objServer->Rtl433Events)) {
+            if (($this->objServer->Rtl433Events[0])) {
 
-                $recentEvents = array_slice($this->objServer->Rtl433Events[0], -200, 200);
+                $recentEvents = array_slice($this->objServer->Rtl433Events[0], -$this->objServer->config->RecentEvents, $this->objServer->config->RecentEvents);
                 $conn->send(json_encode([
                     "cmd"   => "rtl433Events",
                     "instance" => 0,

@@ -17,12 +17,18 @@ class AppConfig
     // Production Server Address
     private $ServerAddressProd = "josieinthedark.ddns.net";
 
+    // Update Frequency (seconds) - How often to check for new events
+    public $UpdateFrequency = 4;
+
+    // On New Client Connection - How many recent events to send (too many will cause performance delays)
+    public $RecentEvents = 220;
+
     // 
     // Authentication
     // 
     public $AuthRequired = true;
-    public $AuthUsername = "user";
-    public $AuthPassword = "mypass";
+    public $AuthUsername = "josie";
+    public $AuthPassword = "testing";
 
     // 
     // SSL Certificate
@@ -32,7 +38,7 @@ class AppConfig
     private $SSLCertificateDebug = "/etc/apache2/ssl/server.crt";
     private $SSLCertificateProd = "/etc/apache2/ssl/server.crt";
 
-    // Certificate Key
+    // Key File
     private $SSLKeyDebug = "/etc/apache2/ssl/server.key";
     private $SSLKeyProd = "/etc/apache2/ssl/server.key";
 
