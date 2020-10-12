@@ -9,7 +9,7 @@ class AppConfig
     public $WebsiteName = "COMBINED EVENTS MONITOR";
 
     // Debug Hostname - If server matches this string isDebug mode will be true and Debug variables will be used instead of Production
-    private $HostNameDebug = "Mother-Goose";
+    private $HostNameDebug = "!Mother-Goose";
 
     //  Debug Server Address
     private $ServerAddressDebug = "192.168.0.150";
@@ -27,8 +27,8 @@ class AppConfig
     // Authentication
     // 
     public $AuthRequired = true;
-    public $AuthUsername = "xo";
-    public $AuthPassword = "toto";
+    public $AuthUsername = "user";
+    public $AuthPassword = "pass";
 
     // 
     // SSL Certificate
@@ -47,11 +47,12 @@ class AppConfig
     // Files & Directories
     // 
 
-    // DSD+ directories
+    // DSD+ directory
     private $DSDPlusFolderDebug = "/home/ian/Documents/SDR/DSDPlus v2.268/";
     private $DSDPlusFolderProd = "/home/sdr/Desktop/DSDPlus v2.268/";
 
     // File Recordings parent directory
+    //      -    UPDATE - App scans parent directory and each folder is created array
     private $FileEventsPathDebug = "/home/sdr/Desktop/Recordings/";
     private $FileEventsPathProd = "/home/sdr/Desktop/Recordings/";
 
@@ -63,7 +64,7 @@ class AppConfig
     {
 
         // Set isDebug true when debug hostname detected
-        // isDebug - Changes several paramters within the application to adjust for different network and folder paths
+        // isDebug - Changes several parameters within the application to adjust for different network and folder paths
         $this->isDebug = (gethostname() == $this->HostNameDebug);
 
         if ($this->isDebug) {

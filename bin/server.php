@@ -39,6 +39,8 @@ class DSDServer
     public $Rtl433Events = array();
 
 
+    private $bFirstLoad = true;
+
 
     public function __construct()
     {
@@ -109,6 +111,8 @@ class DSDServer
 
             // rtl_433
             $this->Rtl433Events[0] = $this->getRtl433Events(5);
+
+            $this->bFirstLoad = false;
         });
 
 
@@ -199,7 +203,7 @@ class DSDServer
                 $speed = $arLine[5];
                 $unk = $arLine[6];
 
-                if ($icnt >= $this->lastCount[$instance]) {
+                if (!$this->bFirstLoad && $icnt >= $this->lastCount[$instance]) {
                     foreach ($this->eventProcessor->clients as $client) {
 
                         $client->send(json_encode([
@@ -266,7 +270,7 @@ class DSDServer
                 $message = [$date, $tg, $rid, $slot, $duration];
 
                 // New Events
-                if ($icnt >= $this->lastCount[$instance]) {
+                if (!$this->bFirstLoad && $icnt >= $this->lastCount[$instance]) {
                     foreach ($this->eventProcessor->clients as $client) {
 
                         $client->send(json_encode([
@@ -307,7 +311,7 @@ class DSDServer
 
         foreach ($files as $index => $file) {
 
-            if ($file != '.' && $file != '..' && $file != '.htaccess') {
+            if ($file != '' && $file != '.' && $file != '..' && $file != '.htaccess') {
 
                 $fs = filesize($path . $file);
                 if ($fs > 10) {
@@ -316,7 +320,7 @@ class DSDServer
                     $duration = round($fs / 24000, 0);
                     $val = [$name . '/' . $file, $time, $duration];
 
-                    if ($icnt >= $this->lastCount[$instance]) {
+                    if (!$this->bFirstLoad && $icnt >= $this->lastCount[$instance]) {
                         foreach ($this->eventProcessor->clients as $client) {
                             $client->send(json_encode([
                                 "cmd"   => "FileEvent",
@@ -366,7 +370,21 @@ class DSDServer
             $model = $value->model ?? '';
             $channel = $value->channel ?? '';
             $event = $value->event ?? '';
+
+            // Door State (Open,Close)
             $state = $value->state ?? '';
+
+            // Weather Stations Alt Logic...
+            // If door state is empty - try to use weather station temperature in C or F units
+            if (empty($state) && !empty($value->temperature_F)) {
+                $state = $value->temperature_F . " °F";
+            }
+            if (empty($state) && !empty($value->temperature_C)) {
+                $state = $value->temperature_C . " °C";
+            }
+
+
+
             $alarm = $value->alarm ?? '';
             $tamper = $value->tamper ?? '';
             $battery_ok = $value->battery_ok ?? '';
@@ -390,7 +408,7 @@ class DSDServer
 
             $val = [$id, $time, $model, $channel, $event, $state, $alarm, $tamper, $battery_ok, $heartbeat, $mod, $freq, $rssi, $snr, $noise];
 
-            if ($icnt >= $this->lastCount[$instance]) {
+            if (!$this->bFirstLoad && $icnt >= $this->lastCount[$instance]) {
 
                 foreach ($this->eventProcessor->clients as $client) {
 

@@ -25,16 +25,18 @@ if ($config->AuthRequired) {
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
     <meta name="author" content="Ian Bowman">
-
+    <link rel="icon" href="favicon.ico">
     <title><?php echo $config->WebsiteName ?></title>
 
 
+    <!-- Load Hidden Attributes for Javascript -->
     <?php
     function echoAttr($name, $val)
     {
         echo "\n<input type=\"hidden\" id=\"hid_$name\" value=\"$val\">";
     }
     echoAttr("isDebug", $config->isDebug);
+    echoAttr("ServerAddress", $config->ServerAddress);
     echoAttr("AuthRequired", $config->AuthRequired);
     if ($config->AuthRequired) {
         echoAttr("AuthUsername", $config->AuthUsername);
@@ -43,36 +45,39 @@ if ($config->AuthRequired) {
 
     ?>
 
+    <!-- Plugins -->
+    <link rel="stylesheet" href="/plugins/bootstrap.min.css">
+    <link rel="stylesheet" href="/plugins/all.min.css">
+    <link rel="stylesheet" href="/plugins/huebee.min.css">
 
-    <link rel="icon" href="favicon.ico">
-    <link rel="stylesheet" href="css/bootstrap.min.css">
-    <link rel="stylesheet" href="css/all.min.css">
-    <link rel="stylesheet" href="css/style.css?cb=257">
-    <link rel="stylesheet" href="css/theme.css?cb=257">
-    <link href="fontawesome/css/all.css" rel="stylesheet">
+    <!-- App Specific -->
+    <link rel="stylesheet" href="/css/index.css?cb=258">
+    <link rel="stylesheet" href="/css/theme.css?cb=258">
 
-    <script src="/js/jquery-3.4.1.min.js"></script>
-    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <!-- jQuery, popper and other essential plugins  -->
+    <script src="/plugins/jquery-3.4.1.min.js"></script>
+    <script src="/plugins/popper.min.js"></script>
+    <script src="/plugins/howler.min.js"></script>
 
-    <script src="/js/moment.min.js"></script>
-    <script src="/js/tether.min.js"></script>
-    <script src="/js/bootstrap.min.js"></script>
-    <script src="/js/all.min.js"></script>
-    <script src="/fontawesome/js/all.js"></script>
+    <script src="/plugins/bootstrap.min.js"></script>
+    <script src="/plugins/moment.min.js"></script>
+    <script src="/plugins/tether.min.js"></script>
+    <script src="/plugins/all.min.js"></script>
+    <script src="/plugins/huebee.min.js"></script>
 
+    <!-- d3 -->
     <script src="https://d3js.org/d3.v6.min.js"></script>
 
+    <!-- Mapbox -->
     <script src='https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css' rel='stylesheet' />
 
     <!-- code for this project -->
-    <script src="/js/script.js?cb=257"></script>
+    <script src="/js/index.js?cb=258"></script>
 
 </head>
 
 <body>
-
-
 
     <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
         <a class="navbar-brand" href="#"><?php echo $config->WebsiteName ?></a>
@@ -82,45 +87,21 @@ if ($config->AuthRequired) {
 
         <div class="collapse navbar-collapse" id="main-nav">
             <ul class="navbar-nav ml-auto">
-                <!--
-                     <li class="nav-item active">
-                    <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-                </li> 
-                <li class="nav-item">
-                    <a class="nav-link" href="#">
-                        <i data-action="toggle-3d" class="fas fa-volume-mute"></i>
-                        Primary Output
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
-                </li>
-                -->
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="dropdown01" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Options</a>
                     <div class="dropdown-menu" aria-labelledby="dropdown01">
                         <a class="dropdown-item" href="#mute-all">Mute All</a>
+                        <a class="dropdown-item" href="#theme">Theme</a>
 
                         <?php if ($config->AuthRequired) {
                             echo '<div class="dropdown-divider"></div> <a class="dropdown-item" href="logout.php">Logout</a>';
                         } ?>
 
                     </div>
-
-
-
                 </li>
             </ul>
-            <!-- <form class="form-inline my-2 my-lg-0">
-                <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
-                <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
-            </form> -->
         </div>
     </nav>
-
-
-
-
 
     <main role="main" class="container-fluid">
 
@@ -130,8 +111,18 @@ if ($config->AuthRequired) {
             <div class="col-lg-12 col-xl-4" id="DSDPlus0">
                 <div class="card text-center">
                     <div class="card-header">
-                        <h5 class="card-title col-12">DSD+ </h5>
-                        <i data-action="play-pause" class="fas fas-card-header fa-volume-up"></i>
+                        <div class="row">
+                            <div class="col-4">
+                                <i data-action="mute-unmute" class="mr-1 fas fa-volume-up"></i>
+                                <input type="range" class="volume-selector" min="0" max="1" step="0.1">
+                            </div>
+                            <div class="col-4">
+                                <h5 class="card-title font-weight-bold">DSD+ </h5>
+                            </div>
+                            <div class="col-4 text-right">
+                                <i data-action="auto-scroll" class="fas fa-comment mr-2"></i>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="events"></div>
@@ -147,8 +138,10 @@ if ($config->AuthRequired) {
                 <div class="card text-center">
                     <div class="card-header">
                         <div class="row">
-                            <h5 class="card-title col-12">LRRP</h5>
-                            <i data-action="toggle-3d" class="fas fas-card-header fa-map"></i>
+                            <h5 class="card-title font-weight-bold col-12">LRRP</h5>
+                            <div class="fas-card-header">
+                                <i data-action="toggle-3d" class="fas fa-map"></i>
+                            </div>
                         </div>
                     </div>
                     <div class="card-body">
@@ -179,8 +172,18 @@ if ($config->AuthRequired) {
             <div class="col-lg-12 col-xl-4" id="DSDPlus1">
                 <div class="card text-center">
                     <div class="card-header">
-                        <h5 class="card-title col-12">DSD+</h5>
-                        <i data-action="play-pause" class="fas fas-card-header fa-volume-up"></i>
+                        <div class="row">
+                            <div class="col-4">
+                                <i data-action="mute-unmute" class="mr-1 fas fa-volume-up"></i>
+                                <input type="range" class="volume-selector" min="0" max="1" step="0.1">
+                            </div>
+                            <div class="col-4">
+                                <h5 class="card-title font-weight-bold">DSD+ </h5>
+                            </div>
+                            <div class="col-4 text-right">
+                                <i data-action="auto-scroll" class="fas fa-comment mr-2"></i>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="events"></div>
@@ -191,15 +194,21 @@ if ($config->AuthRequired) {
                 </div>
             </div>
 
-
-            <!-- </div> -->
-            <!-- <div class="row mt-3"> -->
-
             <div class="col-lg-12 col-xl-4" id="FileEvent0">
                 <div class="card text-center">
                     <div class="card-header">
-                        <h5 class="card-title col-12">CN Rail - Edson</h5>
-                        <i data-action="play-pause" class="fas fas-card-header fa-volume-up"></i>
+                        <div class="row">
+                            <div class="col-4">
+                                <i data-action="mute-unmute" class="mr-1 fas fa-volume-up"></i>
+                                <input type="range" class="volume-selector" min="0" max="1" step="0.1">
+                            </div>
+                            <div class="col-4">
+                                <h5 class="card-title font-weight-bold">CN RAIL </h5>
+                            </div>
+                            <div class="col-4 text-right">
+                                <i data-action="auto-scroll" class="fas fa-comment mr-2"></i>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="events"></div>
@@ -214,8 +223,8 @@ if ($config->AuthRequired) {
             <div class="col-lg-12 col-xl-4" id="rtl433Event0">
                 <div class="card text-center">
                     <div class="card-header">
-                        <h5 class="card-title col-12">rtl_433</h5>
-                        <!-- <i data-action="play-pause" class="fas fas-card-header fa-volume-up"></i> -->
+                        <h5 class="card-title font-weight-bold col-12">rtl_433</h5>
+                        <!-- <i data-action="mute-unmute" class="fas fas-card-header fa-volume-up"></i> -->
                     </div>
                     <div class="card-body">
                         <div class="events"></div>
@@ -229,8 +238,18 @@ if ($config->AuthRequired) {
             <div class="col-lg-12 col-xl-4" id="FileEvent1">
                 <div class="card text-center">
                     <div class="card-header">
-                        <h5 class="card-title col-12">CYET ATZ - Edson Airport</h5>
-                        <i data-action="play-pause" class="fas fas-card-header fa-volume-up"></i>
+                        <div class="row">
+                            <div class="col-4">
+                                <i data-action="mute-unmute" class="mr-1 fas fa-volume-up"></i>
+                                <input type="range" class="volume-selector" min="0" max="1.0" step="0.1">
+                            </div>
+                            <div class="col-4">
+                                <h5 class="card-title font-weight-bold">CYET ATZ</h5>
+                            </div>
+                            <div class="col-4 text-right">
+                                <i data-action="auto-scroll" class="fas fa-comment mr-2"></i>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="events"></div>

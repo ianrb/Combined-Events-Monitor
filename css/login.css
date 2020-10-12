@@ -1,0 +1,23 @@
+html,
+body {
+    height: 100%;
+    width: 100%;
+    display: flex;
+}
+
+body {
+    display: flex;
+    align-items: center;
+}
+
+input {
+    text-align: center;
+    margin-top: 25px;
+}
+
+#login {
+    width: 100%;
+    max-width: 400px;
+    padding: 15px;
+    margin: auto;
+}

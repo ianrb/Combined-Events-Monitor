@@ -28,28 +28,28 @@ class EventProcessor implements MessageComponentInterface
 
         try {
 
-            // If Authentication Required is true and Username or Password do match - redirect to login
+            // If Authentication Required - Confirm Username and Password
             if ($this->objServer->config->AuthRequired) {
 
-                $queryParmaters = array();
+                $queryParameters = array();
                 $strPayload = $conn->httpRequest->getUri()->getQuery();
-                parse_str($strPayload, $queryParmaters);
+                parse_str($strPayload, $queryParameters);
 
-                if (empty($queryParmaters['payload'])) {
+                if (empty($queryParameters['payload'])) {
                     echo "\n- Socket Connection Rejected - Invalid/No Payload\n";
                     return;
                 }
 
-                $strPayload = base64_decode($queryParmaters['payload']);
-                parse_str($strPayload, $queryParmaters);
+                $strPayload = base64_decode($queryParameters['payload']);
+                parse_str($strPayload, $queryParameters);
 
                 if (strpos($strPayload, "token") === true) {
                     echo "\n\n no token";
                     return;
                 }
 
-                $username = $queryParmaters['username'];
-                $password = $queryParmaters['password'];
+                $username = $queryParameters['username'];
+                $password = $queryParameters['password'];
 
                 // Close Connection and return if username and password do not match
                 if ($username != $this->objServer->config->AuthUsername | $password != $this->objServer->config->AuthPassword) {
@@ -125,7 +125,7 @@ class EventProcessor implements MessageComponentInterface
 
 
             // New Client - Send recent rtl_433 Events
-            if (($this->objServer->Rtl433Events[0])) {
+            if (($this->objServer->Rtl433Events)) {
 
                 $recentEvents = array_slice($this->objServer->Rtl433Events[0], -$this->objServer->config->RecentEvents, $this->objServer->config->RecentEvents);
                 $conn->send(json_encode([

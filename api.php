@@ -1,4 +1,6 @@
 <?php
+header("Access-Control-Allow-Origin: *");
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -6,11 +8,25 @@ error_reporting(E_ALL);
 require_once __DIR__ . "/src/config.php";
 
 $config = new AppConfig();
+// If Authentication Required is true and Username or Password do match - redirect to login
+if ($config->AuthRequired) {
+    session_start();
+    $username = $_SESSION['username'];
+    $password = $_SESSION['password'];
+
+    if ($username != $config->AuthUsername | $password != $config->AuthPassword) {
+        header("location: login.php");
+    }
+}
+
 
 function ReadDSDWaveFile($instance, $strDate, $strTime)
 {
     global $config;
     $DSDPlus = $config->DSDPlusFolder;
+
+    // Add 1 to offset for DSD which uses Folders 1,2,3 etc
+    $instance++;
 
     $strSearch = "${DSDPlus}/VC-Record#${instance}/$strDate/{$strTime}*.wav";
 
@@ -71,11 +87,12 @@ function ReadWaveFile($file)
 // 
 if (isset($_GET['cmd'])) {
 
+
     $cmd = $_GET['cmd'];
 
     switch ($cmd) {
 
-        case "ReadDSDWaveFile":
+        case "GetDSDWaveFile":
             $instance = $_GET['instance'];
             $strDate = $_GET['date'];
             $strTime = $_GET['time'];
@@ -83,7 +100,7 @@ if (isset($_GET['cmd'])) {
             return;
 
 
-        case "ReadWaveFile":
+        case "GetWaveFile":
             $strFile = $_GET['file'];
             ReadWaveFile($strFile);
             return;

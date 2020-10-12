@@ -8,17 +8,24 @@
     --icon-color: #fff;
 }
 
+html,
+body {
+    height: 100%;
+    width: 100%;
+    display: flex;
+}
+
 body {
     background-image: url(../img/radio.jpg);
     background-size: cover;
     padding-top: 4.5rem;
     padding-bottom: 4.5rem;
     color: #fff;
-    /* animation: animation-background 45s 1s infinite; */
+    animation: animation-background 123s 1s infinite;
 }
 
 
-/*  */
+/* Disable Text Select */
 
 .noselect {
     -webkit-touch-callout: none;
@@ -56,9 +63,11 @@ body {
 
 @keyframes animation-background {
     0% {
-        filter: hue-rotate(30deg);
+        backdrop-filter: hue-rotate(0deg);
+        filter: hue-rotate(0deg);
     }
     100% {
+        backdrop-filter: hue-rotate(360deg);
         filter: hue-rotate(360deg);
     }
 }
@@ -70,6 +79,13 @@ navbar
 
 .navbar-brand {
     width: 100%;
-    position: fixed;
+    /* position: fixed; */
     text-align: center;
+}
+
+
+/* Modals */
+
+.modal-content {
+    background: linear-gradient(180deg, var(--box-gradient-top), var(--box-gradient-bottom));
 }
