@@ -1,33 +1,19 @@
 :root {
     --primary-color: #2c003ab8;
-    --secondary-color: #9c0fbf;
-    /*  */
-    --navbar-background-color: #2c003ab8;
-    --box-gradient-top: #8a0fbd;
-    --box-gradient-bottom: #9c0fbf;
+    --font-color: #9c0fbf;
+    --navbar-color: hsla(286, 100%, 11%, 0.722);
     --icon-color: #fff;
+    --scrollbar-track: #000;
+    --scrollbar-thumb: #fff;
 }
 
 html,
 body {
-    height: 100%;
+    min-height: 100%;
+    /* height: 100%; */
     width: 100%;
     display: flex;
-}
-
-body {
-    background-image: url(../img/radio.jpg);
-    background-size: cover;
-    padding-top: 4.5rem;
-    padding-bottom: 4.5rem;
-    color: #fff;
-    animation: animation-background 123s 1s infinite;
-}
-
-
-/* Disable Text Select */
-
-.noselect {
+    /* Disable Text Select */
     -webkit-touch-callout: none;
     /* iOS Safari */
     -webkit-user-select: none;
@@ -38,38 +24,42 @@ body {
     /* Old versions of Firefox */
     -ms-user-select: none;
     /* Internet Explorer/Edge */
-    user-select: none;
+}
+
+body {
+    background-image: url(../img/bg.gif);
+    background-size: cover;
+    padding: 1rem !important;
+    /* padding-bottom: 3.5rem; */
+    overflow-x: hidden;
+    color: #fff;
+}
+
+.container-fluid {
+    padding: 0;
+    padding-top: 2rem;
+}
+
+.modal-dialog {
+    max-width: 700px;
 }
 
 
-/* scrollbar */
+/* 
+.main-container {
+    position: fixed;
+    top: 3rem;
+    bottom: 0;
+    overflow-y: scroll;
+}
+ */
 
-::-webkit-scrollbar {
-    width: .5rem;
+.no-pad {
+    padding: 0;
 }
 
- ::-webkit-scrollbar-track {
-    box-shadow: inset 0 0 5px var(--navbar-background-color);
-    border-radius: 10px;
-}
-
- ::-webkit-scrollbar-thumb {
-    background: var(--navbar-background-color);
-    border-radius: 10px;
-}
-
-
-/* Background Image */
-
-@keyframes animation-background {
-    0% {
-        backdrop-filter: hue-rotate(0deg);
-        filter: hue-rotate(0deg);
-    }
-    100% {
-        backdrop-filter: hue-rotate(360deg);
-        filter: hue-rotate(360deg);
-    }
+.no-pad-l {
+    padding-left: 0;
 }
 
 
@@ -77,15 +67,146 @@ body {
 navbar
  */
 
-.navbar-brand {
-    width: 100%;
-    /* position: fixed; */
-    text-align: center;
+.navbar {
+    padding: .25rem;
+}
+
+nav .dropdown-menu {
+    min-width: 10rem;
+}
+
+.dropdown-toggle::after {
+    display: none;
+}
+
+#main-nav {
+    z-index: 200;
+}
+
+@media screen and (max-width: 600px) {
+    .navbar-brand {
+        font-size: .9rem;
+    }
+}
+
+@media screen and (min-width: 601px) {
+    .navbar-brand {
+        text-align: center;
+        position: fixed;
+        width: 100%;
+        left: 0;
+        right: 0;
+    }
 }
 
 
 /* Modals */
 
-.modal-content {
-    background: linear-gradient(180deg, var(--box-gradient-top), var(--box-gradient-bottom));
+.modal {
+    z-index: 1200;
+}
+
+
+/*  */
+
+.adobe-blank {
+    text-transform: uppercase;
+    font-family: "Spartan", "Adobe Blank";
+    font-weight: 900;
+    font-style: normal;
+}
+
+.filter-log {
+    border: 1px solid #fff;
+}
+
+
+/*  */
+
+.filter-log {
+    text-align: center;
+}
+
+.progress {
+    /* border-radius: 1rem; */
+    /* padding: 1px; */
+    background: #f0f0f00c;
+    width: 98%;
+    font-size: 1rem;
+    border: solid 1px #1c04250c;
+}
+
+.progress-bar {
+    /* padding: 1rem; */
+    /* #f0f0f00c */
+    /* background-color: #4d43431f; */
+    background-color: #f0f0f00c;
+}
+
+
+/*  */
+
+.btn-sm {
+    padding: .15rem;
+}
+
+
+/*  */
+
+.badge-warning {
+    color: #d4cdd2;
+    background: #8519c5d9;
+}
+
+.message-container {
+    text-align: center;
+    top: 51%;
+    position: relative;
+}
+
+.badge-duration {
+    float: right;
+}
+
+.badge-float-left {
+    position: absolute;
+    left: 20px;
+    top: 0;
+}
+
+.badge-float-right {
+    position: absolute;
+    right: 20px;
+    top: 0;
+}
+
+.badge-top-left {
+    position: absolute;
+    left: 20px;
+    top: -7px;
+}
+
+.badge-bottom-left {
+    position: absolute;
+    left: 20px;
+    top: 7px;
+}
+
+.badge-top-right {
+    position: absolute;
+    right: 20px;
+    top: -7px;
+}
+
+.badge-bottom-right {
+    position: absolute;
+    right: 20px;
+    top: 7px;
+}
+
+
+/* context menu */
+
+.dropdown-context {
+    background-color: red;
 }

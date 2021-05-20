@@ -1,72 +1,34 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 require_once __DIR__ . "/src/config.php";
 
-$config = new AppConfig();
-// If Authentication Required is true and Username or Password do match - redirect to login
-if ($config->AuthRequired) {
-    session_start();
-    $username = $_SESSION['username'];
-    $password = $_SESSION['password'];
+header("Access-Control-Allow-Origin: *");
 
-    if ($username != $config->AuthUsername | $password != $config->AuthPassword) {
-        header("location: login.php");
-    }
+$config = new AppConfig();
+
+if (true | $config->isDebug) {
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+}
+
+// If Keep Alive
+if (isset($_GET['keepalive'])) {
+    return;
+    exit;
 }
 
 
-function ReadDSDWaveFile($instance, $strDate, $strTime)
+function ReadDSDWaveFile($instance, $date, $file)
 {
     global $config;
-    $DSDPlus = $config->DSDPlusFolder;
 
-    // Add 1 to offset for DSD which uses Folders 1,2,3 etc
     $instance++;
+    $path = $config->DSDPlusFolder . "VC-Record#${instance}/${date}/${file}";
 
-    $strSearch = "${DSDPlus}/VC-Record#${instance}/$strDate/{$strTime}*.wav";
-
-    // Initial Search
-    $returnedFiles = glob($strSearch);
-
-    // If no files found, adjust the time by +1 and search again
-    if (count($returnedFiles) < 1) {
-
-        $strTime = ($strTime + 1);
-        if ($strTime < 100000) {
-            $strTime = '0' . $strTime;
-        }
-        $strSearch = "${DSDPlus}/VC-Record#${instance}/$strDate/{$strTime}*.wav";
-        $returnedFiles = glob($strSearch);
-    }
-
-    // If no files found, adjust the time by -2 and search again
-    // this will sometimes find a file that is logged in the events file with a second difference to the actual filename
-    if (count($returnedFiles) < 1) {
-
-        $strTime = ($strTime - 2);
-        if ($strTime < 100000) {
-            $strTime = '0' . $strTime;
-        }
-
-        $strSearch = "${DSDPlus}/VC-Record#${instance}/$strDate/{$strTime}*.wav";
-        $returnedFiles = glob($strSearch);
-    }
-
-
-    if (count($returnedFiles) > 0) {
-
-        $fileName = $returnedFiles[0];
-
-        header("Content-Type: audio/x-wav", true);
-        header('Accept-Ranges: bytes');
-        header('Content-length: ' . filesize($fileName));
-        print file_get_contents($fileName);
-    }
+    header("Content-Type: audio/x-wav", true);
+    header('Accept-Ranges: bytes');
+    header('Content-length: ' . filesize($path));
+    readfile_chunked($path);
 }
 
 function ReadWaveFile($file)
@@ -78,30 +40,55 @@ function ReadWaveFile($file)
     header("Content-Type: audio/x-wav", true);
     header('Accept-Ranges: bytes');
     header('Content-length: ' . filesize($file));
-    print file_get_contents($file);
+    readfile_chunked($file);
+}
+
+function readfile_chunked($filename, $retbytes = TRUE)
+{
+    $buffer = "";
+    $cnt = 0;
+    $handle = fopen($filename, "rb");
+    if ($handle === false) {
+        return false;
+    }
+    while (!feof($handle)) {
+        $buffer = fread($handle, 1048576);
+        echo $buffer;
+        ob_flush();
+        flush();
+        if ($retbytes) {
+            $cnt += strlen($buffer);
+        }
+    }
+    $status = fclose($handle);
+    if ($retbytes && $status) {
+        return $cnt;
+        // return num. bytes delivered like readfile() does.
+    }
+    return $status;
 }
 
 
 // 
-// Logic Switch to determine GET paramaters and retreive file recordings
+// Logic Switch to determine GET parameters and retreive file recordings
 // 
 if (isset($_GET['cmd'])) {
 
 
-    $cmd = $_GET['cmd'];
+    $cmd = $config->get_sanatized_varible('cmd');
 
     switch ($cmd) {
 
         case "GetDSDWaveFile":
-            $instance = $_GET['instance'];
-            $strDate = $_GET['date'];
-            $strTime = $_GET['time'];
-            ReadDSDWaveFile($instance, $strDate, $strTime);
+            $instance = $config->get_sanatized_varible('instance');
+            $strDate = $config->get_sanatized_varible('date');
+            $strFile = $config->get_sanatized_varible('file');
+            ReadDSDWaveFile($instance, $strDate, $strFile);
             return;
 
 
         case "GetWaveFile":
-            $strFile = $_GET['file'];
+            $strFile = $config->get_sanatized_varible('file');
             ReadWaveFile($strFile);
             return;
 

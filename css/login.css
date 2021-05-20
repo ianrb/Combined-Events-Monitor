@@ -20,4 +20,6 @@ input {
     max-width: 400px;
     padding: 15px;
     margin: auto;
+    border-radius: 1rem;
+    border: 1px solid #ffffff75;
 }

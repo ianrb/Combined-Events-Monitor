@@ -4,21 +4,18 @@ require_once __DIR__ . "/src/config.php";
 
 $config = new AppConfig();
 
-// If Authentication Required is true and Username or Password do match - redirect to login
-if ($config->AuthRequired) {
-    session_start();
-    $username = $_SESSION['username'];
-    $password = $_SESSION['password'];
-
-    if ($username != $config->AuthUsername | $password != $config->AuthPassword) {
-        header("location: login.php");
-    }
+// Is Debug Show PHP errors
+if ($config->isDebug) {
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
+    error_reporting(E_ALL);
 }
 
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+
+<html lang="en" style="background: #000;">
 
 <head>
     <meta charset="utf-8">
@@ -29,120 +26,150 @@ if ($config->AuthRequired) {
     <title><?php echo $config->WebsiteName ?></title>
 
 
-    <!-- Load Hidden Attributes for Javascript -->
-    <?php
-    function echoAttr($name, $val)
-    {
-        echo "\n<input type=\"hidden\" id=\"hid_$name\" value=\"$val\">";
-    }
-    echoAttr("isDebug", $config->isDebug);
-    echoAttr("ServerAddress", $config->ServerAddress);
-    echoAttr("AuthRequired", $config->AuthRequired);
-    if ($config->AuthRequired) {
-        echoAttr("AuthUsername", $config->AuthUsername);
-        echoAttr("AuthPassword", $config->AuthPassword);
-    }
-
-    ?>
-
-    <!-- Plugins -->
-    <link rel="stylesheet" href="/plugins/bootstrap.min.css">
-    <link rel="stylesheet" href="/plugins/all.min.css">
-    <link rel="stylesheet" href="/plugins/huebee.min.css">
-
+    <!-- Plugins CSS-->
+    <link rel="stylesheet" href="plugins/bootstrap.min.css">
+    <link rel="stylesheet" href="plugins/all.min.css">
+    <link rel="stylesheet" href="plugins/spartan.css">
+    <link rel="stylesheet" href="plugins/context.css">
     <!-- App Specific -->
-    <link rel="stylesheet" href="/css/index.css?cb=258">
-    <link rel="stylesheet" href="/css/theme.css?cb=258">
 
-    <!-- jQuery, popper and other essential plugins  -->
-    <script src="/plugins/jquery-3.4.1.min.js"></script>
-    <script src="/plugins/popper.min.js"></script>
-    <script src="/plugins/howler.min.js"></script>
+    <?php if ($config->isDebug) { ?>
 
-    <script src="/plugins/bootstrap.min.js"></script>
-    <script src="/plugins/moment.min.js"></script>
-    <script src="/plugins/tether.min.js"></script>
-    <script src="/plugins/all.min.js"></script>
-    <script src="/plugins/huebee.min.js"></script>
+        <link rel="stylesheet" href="css/index.css?cb={automatically-updated}">
+        <link rel="stylesheet" href="css/theme.css?cb={automatically-updated}">
 
-    <!-- d3 -->
-    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <?php } else { ?>
 
-    <!-- Mapbox -->
-    <script src='https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js'></script>
-    <link href='https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css' rel='stylesheet' />
+        <link rel="stylesheet" href="css/index.min.css?cb={automatically-updated}">
 
-    <!-- code for this project -->
-    <script src="/js/index.js?cb=258"></script>
+    <?php } ?>
+
 
 </head>
 
-<body>
+<body style="display:none;">
 
     <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
-        <a class="navbar-brand" href="#"><?php echo $config->WebsiteName ?></a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+
+        <a class="navbar-brand adobe-blank ml-auto" href="#"><?php echo $config->WebsiteName ?></a>
+
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#main-nav" aria-controls="main-nav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-
         <div class="collapse navbar-collapse" id="main-nav">
-            <ul class="navbar-nav ml-auto">
+            <ul class="navbar-nav mr-auto">
+
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="dropdown01" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Options</a>
-                    <div class="dropdown-menu" aria-labelledby="dropdown01">
-                        <a class="dropdown-item" href="#mute-all">Mute All</a>
-                        <a class="dropdown-item" href="#theme">Theme</a>
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-cog"></i>&nbsp;<span class="float-right h5 text-capitalize adobe-blank"><?php echo ($config->AuthRequired ? $config->AuthUsername : "Configuration"); ?>
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
 
-                        <?php if ($config->AuthRequired) {
-                            echo '<div class="dropdown-divider"></div> <a class="dropdown-item" href="logout.php">Logout</a>';
-                        } ?>
 
+                        <a class="dropdown-item" href="#mute-all">
+                            <i class="fas fa-volume-up"></i>&nbsp;<span class="float-right">Mute All</span>
+                        </a>
+                        <a class="dropdown-item" href="#playback-mode">
+                            <i class="fas fa-list-ol"></i>&nbsp;<span class="float-right">Linear</span>
+                        </a>
+
+                        <div class="dropdown-divider"></div>
+
+                        <a class="dropdown-item" href="#config">
+                            <i class="fas fa-cogs"></i>&nbsp;<span class="float-right">Configuration</span>
+                        </a>
+
+                        <a class="dropdown-item" href="#ssl-bypass">
+                            <i class="fas fa-key"></i>&nbsp;<span class="float-right">SSL Bypass</span>
+                        </a>
+
+
+                        <?php if ($config->AuthRequired) { ?>
+                            <div class="dropdown-divider"></div>
+
+
+                            <a class="dropdown-item" href="#logout">
+                                <i class="fas fa-user-lock"></i>&nbsp;<span class="float-right">Logout</span>
+                            </a>
+
+                        <?php } ?>
                     </div>
                 </li>
+
             </ul>
         </div>
+
+
     </nav>
 
     <main role="main" class="container-fluid">
 
-
         <div class="row">
 
-            <div class="col-lg-12 col-xl-4" id="DSDPlus0">
+            <!-- DSDPLus Events 0 -->
+            <div class="event-group col-md-12 col-lg-6 col-xl-3" id="DSDPlus0">
                 <div class="card text-center">
                     <div class="card-header">
                         <div class="row">
-                            <div class="col-4">
-                                <i data-action="mute-unmute" class="mr-1 fas fa-volume-up"></i>
-                                <input type="range" class="volume-selector" min="0" max="1" step="0.1">
+                            <div class="col-4 text-left">
+                                <button data-toggle="filter-events" type="button" class="btn btn-sm" title="Filter Events">
+                                    <i class="fas fa-search"></i>
+                                </button>
                             </div>
                             <div class="col-4">
                                 <h5 class="card-title font-weight-bold">DSD+ </h5>
                             </div>
                             <div class="col-4 text-right">
-                                <i data-action="auto-scroll" class="fas fa-comment mr-2"></i>
+                                <button data-action="auto-scroll" type="button" class="btn btn-sm" title="Auto Scroll / Manual">
+                                    <i class="fas fa-comment"></i>
+                                </button>
+                                <button data-action="mute-unmute" type="button" class="btn btn-sm" title="Mute / Unmute">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                                <button data-toggle="settings-popover" type="button" class="btn btn-sm" title="Settings">
+                                    <i class="fas fa-sliders-h"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <div class="events"></div>
+                    <div class="card-body events">
                     </div>
                     <div class="card-footer">
                         <!-- Filter [talkgroup] / [radioid] -->
-                        TIII / 153.920 MHz
+                        TIII 153.920 MHz
                     </div>
                 </div>
             </div>
 
-            <div class="col-lg-12 col-xl-4" id="LRRP">
+            <!-- ADS-B / DSDPlus LRRP -->
+            <div class="event-group col-md-12 col-lg-6" id="MapboxMap">
                 <div class="card text-center">
                     <div class="card-header">
+
                         <div class="row">
-                            <h5 class="card-title font-weight-bold col-12">LRRP</h5>
-                            <div class="fas-card-header">
-                                <i data-action="toggle-3d" class="fas fa-map"></i>
+                            <div class="col-4 text-left">
+
+
+                                <button data-toggle="filter-events" type="button" class="btn btn-sm" title="Filter Events">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <!-- <i class="pl-3"></i> -->
+
+                            </div>
+                            <div class="col-4">
+                                <h5 class="card-title font-weight-bold">ADS-B / LRRP </h5>
+                            </div>
+                            <div class="col-4 text-right">
+
+                                <button data-action="mute-unmute" type="button" class="btn btn-sm" title="Mute / Unmute">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                                <button data-toggle="settings-popover" type="button" class="btn btn-sm" title="Settings">
+                                    <i class="fas fa-sliders-h"></i>
+                                </button>
                             </div>
                         </div>
+
                     </div>
                     <div class="card-body">
                         <div id="map"></div>
@@ -150,10 +177,41 @@ if ($config->AuthRequired) {
                     <div class="card-footer">
 
                         <div class="row">
-                            <div class="col-6 text-right">
-                                <span>Select Layer</span>
+                            <div class="col-6 text-left">
+
+
+                                <button data-action="map-zoom-in" type="button" class="btn btn-sm" title="Zoom In">
+                                    <i class="fas fa-search-plus"></i>
+                                </button>
+                                <button data-action="map-zoom-out" type="button" class="btn btn-sm" title="Zoom Out">
+                                    <i class="fas fa-search-minus"></i>
+                                </button>
+
+                                <i class="pl-2"></i>
+
+                                <button data-action="toggle-3d" type="button" class="btn btn-sm" title="Toggle 3D Buildings">
+                                    <i class="fas fa-map"></i>
+                                </button>
+
+
+                                <i class="pl-4"></i>
+
+
+                                <button data-action="toggle-plane" type="button" class="btn btn-sm">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                                <button data-action="toggle-town" type="button" class="btn btn-sm">
+                                    <i class="fas fa-layer-group"></i>
+                                </button>
+                                <button data-action="toggle-trees" type="button" class="btn btn-sm">
+                                    <i class="fas fa-tree"></i>
+                                </button>
+
                             </div>
-                            <div class="col-6">
+                            <div class="col-3 text-right">
+                                <span>Layer</span>
+                            </div>
+                            <div class="col-3">
                                 <select class="form-control select-theme">
                                     <option value="streets-v11">Streets</option>
                                     <option value="light-v10">Light</option>
@@ -169,19 +227,33 @@ if ($config->AuthRequired) {
             </div>
 
 
-            <div class="col-lg-12 col-xl-4" id="DSDPlus1">
+            <!-- DSDPlus Event 1 -->
+            <div class="event-group col-md-12 col-lg-6 col-xl-3" id="DSDPlus1">
                 <div class="card text-center">
                     <div class="card-header">
                         <div class="row">
-                            <div class="col-4">
-                                <i data-action="mute-unmute" class="mr-1 fas fa-volume-up"></i>
-                                <input type="range" class="volume-selector" min="0" max="1" step="0.1">
+                            <div class="col-4 text-left">
+
+                                <button data-toggle="filter-events" type="button" class="btn btn-sm" title="Filter Events">
+                                    <i class="fas fa-search"></i>
+                                </button>
+
+
                             </div>
                             <div class="col-4">
                                 <h5 class="card-title font-weight-bold">DSD+ </h5>
                             </div>
                             <div class="col-4 text-right">
-                                <i data-action="auto-scroll" class="fas fa-comment mr-2"></i>
+
+                                <button data-action="auto-scroll" type="button" class="btn btn-sm" title="Auto Scroll / Manual">
+                                    <i class="fas fa-comment"></i>
+                                </button>
+                                <button data-action="mute-unmute" type="button" class="btn btn-sm" title="Mute / Unmute">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                                <button data-toggle="settings-popover" type="button" class="btn btn-sm" title="Settings">
+                                    <i class="fas fa-sliders-h"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -189,24 +261,35 @@ if ($config->AuthRequired) {
                         <div class="events"></div>
                     </div>
                     <div class="card-footer">
-                        TIII / 159.225 MHz
+                        TIII 159.225 MHz
                     </div>
                 </div>
             </div>
 
-            <div class="col-lg-12 col-xl-4" id="FileEvent0">
+
+            <!-- File Event 0 -->
+            <div class="event-group col-md-12 col-lg-6 col-xl-3" id="FileEvent0">
                 <div class="card text-center">
                     <div class="card-header">
                         <div class="row">
-                            <div class="col-4">
-                                <i data-action="mute-unmute" class="mr-1 fas fa-volume-up"></i>
-                                <input type="range" class="volume-selector" min="0" max="1" step="0.1">
+                            <div class="col-4 text-left">
+                                <button data-toggle="filter-events" type="button" class="btn btn-sm" title="Filter Events">
+                                    <i class="fas fa-search"></i>
+                                </button>
                             </div>
                             <div class="col-4">
                                 <h5 class="card-title font-weight-bold">CN RAIL </h5>
                             </div>
                             <div class="col-4 text-right">
-                                <i data-action="auto-scroll" class="fas fa-comment mr-2"></i>
+                                <button data-action="auto-scroll" type="button" class="btn btn-sm" title="Auto Scroll / Manual">
+                                    <i class="fas fa-comment"></i>
+                                </button>
+                                <button data-action="mute-unmute" type="button" class="btn btn-sm" title="Mute / Unmute">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                                <button data-toggle="settings-popover" type="button" class="btn btn-sm" title="Settings">
+                                    <i class="fas fa-sliders-h"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -220,11 +303,31 @@ if ($config->AuthRequired) {
             </div>
 
 
-            <div class="col-lg-12 col-xl-4" id="rtl433Event0">
+            <!-- rtl_433 Events -->
+            <div class="event-group col-md-12 col-lg-3" id="rtl433Event0">
                 <div class="card text-center">
                     <div class="card-header">
-                        <h5 class="card-title font-weight-bold col-12">rtl_433</h5>
-                        <!-- <i data-action="mute-unmute" class="fas fas-card-header fa-volume-up"></i> -->
+                        <div class="row">
+                            <div class="col-4 text-left">
+                                <button data-toggle="filter-events" type="button" class="btn btn-sm" title="Filter Events">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                            <div class="col-4">
+                                <h5 class="card-title font-weight-bold">rtl_433 </h5>
+                            </div>
+                            <div class="col-4 text-right">
+                                <button data-action="auto-scroll" type="button" class="btn btn-sm">
+                                    <i class="fas fa-comment"></i>
+                                </button>
+                                <button data-action="mute-unmute" type="button" class="btn btn-sm">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                                <button data-toggle="settings-popover" type="button" class="btn btn-sm" title="Settings">
+                                    <i class="fas fa-sliders-h"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="events"></div>
@@ -235,19 +338,64 @@ if ($config->AuthRequired) {
                 </div>
             </div>
 
-            <div class="col-lg-12 col-xl-4" id="FileEvent1">
+            <div class="event-group col-md-12 col-lg-3" id="rtl433Event1">
                 <div class="card text-center">
                     <div class="card-header">
                         <div class="row">
+                            <div class="col-4 text-left">
+                                <button data-toggle="filter-events" type="button" class="btn btn-sm" title="Filter Events">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
                             <div class="col-4">
-                                <i data-action="mute-unmute" class="mr-1 fas fa-volume-up"></i>
-                                <input type="range" class="volume-selector" min="0" max="1.0" step="0.1">
+                                <h5 class="card-title font-weight-bold">rtl_433 </h5>
+                            </div>
+                            <div class="col-4 text-right">
+
+                                <button data-action="auto-scroll" type="button" class="btn btn-sm">
+                                    <i class="fas fa-comment"></i>
+                                </button>
+                                <button data-action="mute-unmute" type="button" class="btn btn-sm">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                                <button data-toggle="settings-popover" type="button" class="btn btn-sm" title="Settings">
+                                    <i class="fas fa-sliders-h"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="events"></div>
+                    </div>
+                    <div class="card-footer">
+                        433.920 MHz
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Event 1 -->
+            <div class="event-group col-md-12 col-lg-6 col-xl-3" id="FileEvent1">
+                <div class="card text-center">
+                    <div class="card-header">
+                        <div class="row">
+                            <div class="col-4 text-left">
+                                <button data-toggle="filter-events" type="button" class="btn btn-sm" title="Filter Events">
+                                    <i class="fas fa-search"></i>
+                                </button>
                             </div>
                             <div class="col-4">
                                 <h5 class="card-title font-weight-bold">CYET ATZ</h5>
                             </div>
                             <div class="col-4 text-right">
-                                <i data-action="auto-scroll" class="fas fa-comment mr-2"></i>
+                                <button data-action="auto-scroll" type="button" class="btn btn-sm" title="Auto Scroll / Manual">
+                                    <i class="fas fa-comment"></i>
+                                </button>
+                                <button data-action="mute-unmute" type="button" class="btn btn-sm" title="Mute / Unmute">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                                <button data-toggle="settings-popover" type="button" class="btn btn-sm" title="Settings">
+                                    <i class="fas fa-sliders-h"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -262,11 +410,56 @@ if ($config->AuthRequired) {
         </div>
 
 
-
     </main>
 
     <?php include_once('modals.php') ?>
 
 </body>
+
+
+<!-- Load Hidden Attributes for Javascript -->
+<?php
+
+function echoAttr($name, $val)
+{
+    echo "\n<input type=\"hidden\" id=\"hid_$name\" value=\"$val\">";
+}
+echoAttr("isDebug", $config->isDebug);
+echoAttr("ServerAddress", $config->ServerAddress);
+
+echoAttr("RecentEvents", $config->RecentEvents);
+echoAttr("AuthRequired", $config->AuthRequired);
+if ($config->AuthRequired) {
+    echoAttr("AuthUsername", $config->AuthUsername);
+    echoAttr("AuthPassword", base64_encode($config->AuthPassword));
+}
+
+?>
+
+<!-- jQuery, Bootstrap, popper and other essential plugins  -->
+<script src="/plugins/jquery-3.4.1.min.js"></script>
+<script src="/plugins/popper.min.js"></script>
+<script src="/plugins/howler.min.js"></script>
+
+<script src="/plugins/bootstrap.bundle.min.js"></script>
+<script src="/plugins/moment.min.js"></script>
+<script src="/plugins/tether.min.js"></script>
+<script src="/plugins/all.min.js"></script>
+<script src="/plugins/jscolor.min.js"></script>
+<script src="/plugins/context.js?cb=1"></script>
+<!-- <script src="/plugins/wavesurfer.min.js"></script> -->
+
+<!-- d3 -->
+<script src="https://d3js.org/d3.v6.min.js"></script>
+
+<!-- Mapbox -->
+<script src='https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js'></script>
+<link href='https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css' rel='stylesheet' />
+
+<!-- code for this project - consider using Closure Compiler  -->
+<script src="/js/config.js?cb={automatically-updated}"></script>
+<script src="/js/mapbox.js?cb={automatically-updated}"></script>
+<script src="/js/events.js?cb={automatically-updated}"></script>
+<script src="/js/index.js?cb={automatically-updated}"></script>
 
 </html>

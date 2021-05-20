@@ -6,10 +6,10 @@ class AppConfig
     // 
 
     // Website Title and Header Name
-    public $WebsiteName = "COMBINED EVENTS MONITOR";
+    public $WebsiteName = "Combined Events Monitor";
 
     // Debug Hostname - If server matches this string isDebug mode will be true and Debug variables will be used instead of Production
-    private $HostNameDebug = "!Mother-Goose";
+    private $HostNameDebug = "Mother-Goose";
 
     //  Debug Server Address
     private $ServerAddressDebug = "192.168.0.150";
@@ -18,15 +18,15 @@ class AppConfig
     private $ServerAddressProd = "josieinthedark.ddns.net";
 
     // Update Frequency (seconds) - How often to check for new events
-    public $UpdateFrequency = 4;
+    public $UpdateFrequency = 6;
 
     // On New Client Connection - How many recent events to send (too many will cause performance delays)
-    public $RecentEvents = 220;
+    public $RecentEvents = 400;
 
     // 
     // Authentication
     // 
-    public $AuthRequired = true;
+    public $AuthRequired = false;
     public $AuthUsername = "user";
     public $AuthPassword = "pass";
 
@@ -53,19 +53,30 @@ class AppConfig
 
     // File Recordings parent directory
     //      -    UPDATE - App scans parent directory and each folder is created array
-    private $FileEventsPathDebug = "/home/sdr/Desktop/Recordings/";
-    private $FileEventsPathProd = "/home/sdr/Desktop/Recordings/";
+    private $FileEventsPathDebug = "/home/ian/Desktop/CEM/Recordings/";
+    private $FileEventsPathProd = "/home/sdr/Desktop/CEM/Recordings/";
 
     // rtl_433 JSON output directory
     private $Rtl433PathDebug = "/home/ian/Desktop/";
-    private $Rtl433PathProd = "/home/sdr/Desktop/Recordings/rtl_433/";
+    private $Rtl433PathProd = "/home/sdr/Desktop/CEM/";
 
-    public function __construct()
+    public function __construct($enforceAuth = true)
     {
 
         // Set isDebug true when debug hostname detected
         // isDebug - Changes several parameters within the application to adjust for different network and folder paths
         $this->isDebug = (gethostname() == $this->HostNameDebug);
+
+        if ($this->isDebug) {
+            ini_set('display_errors', 1);
+            ini_set('display_startup_errors', 1);
+            error_reporting(E_ALL);
+        }
+
+        // Pages that require config.php will require authentication when configured
+        if ($enforceAuth && $this->AuthRequired) {
+            $this->login();
+        }
 
         if ($this->isDebug) {
 
@@ -89,6 +100,51 @@ class AppConfig
             $this->Rtl433Path = $this->Rtl433PathProd;
         }
     }
+
+    // If Authentication Required is true and Username or Password do match - redirect to login
+    public function login()
+    {
+        session_start();
+
+        if (isset($_SESSION['username'], $_SESSION['password'])) {
+
+            $username = $_SESSION['username'];
+            $password = $_SESSION['password'];
+
+            if ($username == $this->AuthUsername && $password == $this->AuthPassword) {
+                // login success
+            } else {
+                // login authentication failure
+                $this->logout(1);
+            }
+        } else {
+            // login unset session
+            $this->logout(2);
+        }
+    }
+
+    public function logout($cmd = 0)
+    {
+        session_destroy();
+        header("location: /login?cmd=" . $cmd);
+        exit;
+        return;
+    }
+
+    // Remove all HTML tags and all characters with ASCII value > 127, from $_GET variable
+    function get_sanatized_varible($name)
+    {
+        $str = "";
+
+        if (isset($_GET[$name])) {
+
+            $str = $_GET[$name];
+            $newstr = filter_var($str, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH);
+        }
+
+        return $newstr;
+    }
+
 
     // Do Not Edit
     // These properties are set in __construct function

@@ -20,9 +20,10 @@ class DSDServer
     public $eventProcessor;
 
     public $config;
-    public $isDebug;
+    public $isDebug = false;
 
-    public $lastCount = array(0, 0, 0, 0, 0, 0);
+    // dsd,dsd,lrrp,file,file,dump1090
+    public $lastCount = array(0, 0, 0, 0, 0, 0, 0);
 
     // DSD Config
     public $DSDConfig = array();
@@ -30,15 +31,21 @@ class DSDServer
     public $DDSLRRPEvents = array();
     public $DDSTotalInstances = 2;
 
+    // FlightFeeder
+    public $AircraftEvents = array();
+
+
     // File Events (rtl_fm / sox)
     public $FileEvents = array();
     public $FileTotalInstances = 2;
+    public $FileEventsDirectories = array();
 
     // rtl_433
-    public $Rtl433TotalInstances = 1;
+    public $Rtl433TotalInstances = 2;
     public $Rtl433Events = array();
 
 
+    private $bRunning = false;
     private $bFirstLoad = true;
 
 
@@ -47,13 +54,14 @@ class DSDServer
         error_reporting(E_ALL); // Error engine - always TRUE!
         ini_set('ignore_repeated_errors', TRUE); // always TRUE
         ini_set('display_errors', TRUE); // Error display - FALSE only in production environment or real server
-
     }
 
     function start()
     {
-        $this->config = new AppConfig();
 
+        // ini_set('default_socket_timeout', 4);
+
+        $this->config = new AppConfig(false);
 
         $address = $this->config->ServerAddress;
 
@@ -83,18 +91,44 @@ class DSDServer
             'local_cert'        => $this->config->SSLCertificate,
             'local_pk'          => $this->config->SSLKey,
             // Allow self signed certs (should be false in production)
-            // 'allow_self_signed' => true,
-            'verify_peer' => FALSE
+            'allow_self_signed' => $this->config->isDebug,
+            'verify_peer' => false,
+            'verify_host' => true
         ]);
 
         $secure_websockets_server = new \Ratchet\Server\IoServer($app, $secure_websockets, $loop);
+
+
+        // Create File Event Array from sub-directories in Recordings folder
+        if (is_dir($this->config->FileEventsPath)) {
+            $files = scandir($this->config->FileEventsPath);
+            foreach ($files as $index => $dir) {
+                if (is_dir($this->config->FileEventsPath . $dir) && ($dir != '' && $dir != '.' && $dir != '..' && $dir != '.htaccess')) {
+                    array_push($this->FileEventsDirectories, $dir);
+                }
+            }
+        }
 
 
         // Load Groups
         $this->DSDConfig = $this->loadDSDConfig();
 
 
+
+
         $loop->addPeriodicTimer($this->config->UpdateFrequency, function () {
+
+            if ($this->bRunning) {
+                echo "\n- Skipping Timer (prior call still processing)";
+                return;
+            }
+
+            $this->bRunning = true;
+
+            if ($this->isDebug) {
+                echo "\n\n---------------\n\nRunning Periodic Timer";
+                echo "\n- DSD+ Events";
+            }
 
             // Check for DSD Updates
             $iDSD = ($this->DDSTotalInstances - 1);
@@ -103,23 +137,50 @@ class DSDServer
             }
 
             // LRRP
-            $this->DDSLRRPEvents = $this->getDSDPlusLRRP(2);
+            if ($this->isDebug) {
+                echo "\n- DSD+ LRRP";
+            }
+
+            $this->DDSLRRPEvents = $this->getDSDPlusLRRP($this->DDSTotalInstances);
 
             // File Events
-            $this->FileEvents[0] = $this->getFileEvents(3, "CN");
-            $this->FileEvents[1] = $this->getFileEvents(4, "CYET");
+            if ($this->isDebug) {
+                echo "\n- File Events";
+            }
+            $iFile = ($this->FileTotalInstances - 1);
+            for ($instance = 0; $instance <= $iFile; $instance++) {
+                $this->FileEvents[$instance] = $this->getFileEvents(($instance + 3), $this->FileEventsDirectories[$instance]);
+            }
 
             // rtl_433
-            $this->Rtl433Events[0] = $this->getRtl433Events(5);
+            if ($this->isDebug) {
+                echo "\n- rtl_433 Events";
+            }
 
-            $this->bFirstLoad = false;
+            // rtl_433 345 MHz
+            $this->Rtl433Events[0] = $this->getRtl433Events(5, 345);
+
+            // rtl_433 433 MHz
+            $this->Rtl433Events[1] = $this->getRtl433Events(6, 433);
+
+            // Dump1090
+            if ($this->isDebug) {
+                echo "\n- dump1090 Events";
+            }
+            $this->AircraftEvents = $this->getDump1090(7);
+
+            if ($this->isDebug) {
+                echo "\n Complete";
+            }
+
+            $this->bRunning = $this->bFirstLoad = false;
         });
 
 
         $secure_websockets_server->run();
     }
 
-    // Implmented/Not Used - DSD+ Already Renames Log - This could be used for JS/Client Side UI
+    // Implemented/Not Used - DSD+ Already Renames Log - This could be used for JS/Client Side UI
     function loadDSDConfig()
     {
         // Groups
@@ -165,6 +226,95 @@ class DSDServer
     }
 
 
+    // Read tail of event file line by line and build array of valid events
+    function getDSDPlusEvents($instance)
+    {
+        // $dsddate = date("Ymd");
+
+        $files = [];
+        $dsdinstance = ($instance + 1);
+        $path = $this->config->DSDPlusFolder . "VC-Record#${dsdinstance}/";
+
+        $icnt = 0;
+        $events = array([]);
+
+        for ($i = -1; $i <= 1; $i++) {
+
+            $dsddate = date("Ymd", strtotime("$i days", time()));
+            $subpath = $path . $dsddate . '/';
+
+            // echo "\nRunning : $i - $dsddate - $subpath";
+
+            if (file_exists($subpath)) {
+
+                $files = scandir($subpath);
+
+                foreach ($files as $index => $file) {
+
+                    // skip directories, invalid files
+                    if (strpos($file, "~") > -1  | $file == '' | $file == '.' | $file == '..' | $file == '.htaccess') {
+                        continue;
+                    }
+
+                    $fs = filesize($subpath . $file);
+                    $time = filemtime($subpath . $file);
+                    $duration = round($fs / 24000, 0);
+
+                    if (empty($time) || $duration < 1) {
+                        continue;
+                    }
+
+                    // echo "\n\ntime: $file";
+                    // echo "\ntime: $time";
+                    // echo "\ntime isset: " . isset($time);
+
+                    $arfile = explode('_', str_replace(".wav", "", $file));
+
+                    $slot = $arfile[5];
+                    $tg = $arfile[7];
+                    $rid = $arfile[8];
+
+                    $val = [$dsddate, $time, $file, $slot, $tg, $rid, $duration];
+
+                    if (!$this->bFirstLoad && $icnt >= $this->lastCount[$instance]) {
+                        foreach ($this->eventProcessor->clients as $client) {
+                            $client->send(json_encode([
+                                "cmd"   => "DSDEvent",
+                                "instance" => $instance,
+                                "event" => $val
+                            ]));
+                        }
+                    }
+                    $icnt++;
+
+                    array_push($events, $val);
+                }
+            }
+        }
+
+
+        // natcasesort($events);
+
+        foreach ($events as $index => $event) {
+        }
+
+        $this->lastCount[$instance] = $icnt;
+
+
+        // TESTING Bug Fix - If return array is larger than RecentEvents variable - slice only x
+        if ($events) {
+            $eventCount = count($events) - 1;
+            if ($eventCount > $this->config->RecentEvents) {
+                $eventCount = $this->config->RecentEvents;
+            }
+            $recentEvents = array_slice($events, -$eventCount, $eventCount);
+            return $recentEvents;
+        }
+
+        return null;
+    }
+
+
     // Read LRRP file line by line to build an array of valid events
     function getDSDPlusLRRP($instance)
     {
@@ -177,15 +327,23 @@ class DSDServer
                 return;
             }
 
+            $iLineCount = shell_exec("wc -l " . " '$path'");
+            $iLineCount = intval($iLineCount);
+
+            $icnt = ($iLineCount - $this->config->RecentEvents) - 1;
+
             $events = array();
-            $strFileContents = file_get_contents($path, "r");
+            // $strFileContents = file_get_contents($path, "r");            
+            $strFileContents = shell_exec("tail -n " . $this->config->RecentEvents . " '$path'");
+
             $strFileContents = str_replace("       ", " ", $strFileContents);
             $strFileContents = str_replace("  ", " ", $strFileContents);
             $strFileContents = str_replace("\t", " ", $strFileContents);
 
             // Line by Line Fixes
             $lines = explode("\n", $strFileContents);
-            $icnt = 0;
+
+            // echo "\n lrrp inst cnt" . $this->lastCount[$instance];
 
             foreach ($lines as $index => $line) {
 
@@ -203,18 +361,20 @@ class DSDServer
                 $speed = $arLine[5];
                 $unk = $arLine[6];
 
+                $message = [$date, $time, $RID, $lat, $lng, $speed, $unk];
+
                 if (!$this->bFirstLoad && $icnt >= $this->lastCount[$instance]) {
+
                     foreach ($this->eventProcessor->clients as $client) {
 
                         $client->send(json_encode([
                             "cmd"   => "DSDLRRP",
-                            "event" => [$date, $time, $RID, $lat, $lng, $speed, $unk]
-                            // "event" => json_encode($events)
+                            "event" => $message
                         ]));
                     }
                 }
                 $icnt++;
-                array_push($events, [$date, $time, $RID, $lat, $lng, $speed, $unk]);
+                array_push($events, $message);
             }
         } catch (Exception $e) {
             return $e->getMessage();
@@ -224,57 +384,115 @@ class DSDServer
         return $events;
     }
 
-    // Read event file line by line to build an array of valid events
-    function getDSDPlusEvents($instance)
+    // Read faup1080 --stdout via file line by line to build an array of valid events
+    // Shouldn't have formatted the FlightFeeder...
+    function getDump1090($instance)
     {
 
         try {
 
+            $path = "http://192.168.0.101/aircraft.txt";
+
+            // Fix long socket connection from dump1090 file_get_contents task
+            $ctx = stream_context_create(array(
+                'http' =>
+                array(
+                    'timeout' => 7
+                )
+            ));
+
+
+            $strFileContents = file_get_contents($path, false, $ctx);
+            // file_put_contents("", $strFileContents);
+
+
             $events = array([]);
-            $dsdinstance = ($instance + 1);
-            $path = $this->config->DSDPlusFolder . "VC-DSDPlus#${dsdinstance}.event";
 
-            if (!file_exists($path)) {
-                echo "\nSkipping non-existent file/directory: $path";
-                return;
-            }
+            // $iLineCount = shell_exec("wc -l " . " '$path'");
+            // $iLineCount = intval($iLineCount);
 
-            $strFileContents = file_get_contents($path, "r");
+            // $icnt = ($iLineCount - $this->config->RecentEvents) - 1;
 
-            $lines = [explode("\n", $strFileContents)];
 
-            // Line by Line Fixes
-            $lines = explode("\n", $strFileContents);
             $icnt = 0;
+
+            $lines = explode("\n", $strFileContents);
 
             foreach ($lines as $index => $line) {
 
-                if ($line == null || stripos($line, " neighbor: ") || !str_contains($line, "Group call;")) {
+                $arLine = array_filter(explode("\t", $line));
+                $clock = $hexid = $ident = $squawk = $latitude = $longitude = $speed = $vrate = $track = $navheading = '';
+
+                foreach ($arLine as $index2 => $line2) {
+                    // echo "\n" . $arLine[$index2 + 1];
+                    if (str_contains($line2, "clock")) {
+                        $clock = $arLine[$index2 + 1];
+                    }
+                    if (str_contains($line2, "hexid")) {
+                        $hexid = $arLine[$index2 + 1];
+                    }
+                    if (str_contains($line2, "ident")) {
+                        $ident = $arLine[$index2 + 1];
+                        $ident = substr($ident, 1, strlen($ident));
+                        $arp = explode(" ", $ident);
+                        $ident = $arp[0];
+                    }
+                    if (str_contains($line2, "squawk")) {
+                        $arp = explode(" ", $arLine[$index2 + 1]);
+                        $squawk = $arp[0];
+                    }
+                    if (str_contains($line2, "alt")) {
+                        $arp = explode(" ", $arLine[$index2 + 1]);
+                        $alt = $arp[0];
+                    }
+                    if (str_contains($line2, "position")) {
+                        $position = $arLine[$index2 + 1];
+                        $position = substr($position, 1, strlen($position));
+                        $arp = explode(" ", $position);
+                        $latitude = $arp[0];
+                        $longitude = $arp[1];
+                    }
+                    if (str_contains($line2, "speed")) {
+                        $arp = explode(" ", $arLine[$index2 + 1]);
+                        $speed = $arp[0];
+                    }
+                    if (str_contains($line2, "vrate")) {
+                        $arp = explode(" ", $arLine[$index2 + 1]);
+                        $vrate = $arp[0];
+                    }
+                    if (str_contains($line2, "track")) {
+                        $arp = explode(" ", $arLine[$index2 + 1]);
+                        $track = $arp[0];
+                    }
+                    if (str_contains($line2, "nav_heading")) {
+                        $arp = explode(" ", $arLine[$index2 + 1]);
+                        $navheading = $arp[0];
+                    }
+                }
+
+
+                // Skip messages without clock,hexid,ident
+                if (empty($clock) | empty($hexid) | empty($ident)) {
                     continue;
                 }
 
-                $arTwoSplit = array_filter(explode('Group call;', $line));
-                $line = str_replace('  ', ';', str_replace("   ", ";", $arTwoSplit[1]));
-                $arLine = array_filter(explode(';', $line));
-
-                if (count($arLine) < 4) {
+                // Skip messages older than 5 minutes
+                $age = (time() - $clock);
+                // echo "\n\n\nAge: $age \n\n " . gettype($age);
+                // echo "\n\n\nia: $age \n\n " . is_numeric($age);
+                if (is_numeric($age) && $age > 1200) {
                     continue;
                 }
 
-                $date = trim(str_replace("  ", ' ', $arTwoSplit[0]));
-                $tg = trim(str_replace("TG=", '', $arLine[0]));
-                $rid = trim(str_replace("RID=", '', $arLine[1]));
-                $slot = trim(str_replace("Slot=", '', $arLine[2]));
-                $duration = trim(str_replace("s", '', $arLine[3]));
-
-                $message = [$date, $tg, $rid, $slot, $duration];
+                $message = [$clock, $hexid, $ident, $squawk, $alt, $vrate, $latitude, $longitude, $speed, $track, $navheading];
+                // print_r($message);
 
                 // New Events
                 if (!$this->bFirstLoad && $icnt >= $this->lastCount[$instance]) {
                     foreach ($this->eventProcessor->clients as $client) {
 
                         $client->send(json_encode([
-                            "cmd"   => "DSDEvent",
+                            "cmd"   => "AircraftEvent",
                             "instance" => $instance,
                             "event" => $message
                         ]));
@@ -304,35 +522,47 @@ class DSDServer
             return;
         }
 
-        $events = array([]);
         $icnt = 0;
+        $events = array([]);
         $files = scandir($path);
+        // Sort low to high
         natcasesort($files);
+        // Remove the last file as this is still un-closed from sox
+        array_pop($files);
 
         foreach ($files as $index => $file) {
 
-            if ($file != '' && $file != '.' && $file != '..' && $file != '.htaccess') {
+            // skip directories, invalid files
+            if ($file == '' | $file == '.' | $file == '..' | $file == '.htaccess') {
+                continue;
+            }
 
-                $fs = filesize($path . $file);
-                if ($fs > 10) {
+            $fs = filesize($path . $file);
+            $time = filemtime($path . $file);
 
-                    $time = filemtime($path . $file);
-                    $duration = round($fs / 24000, 0);
-                    $val = [$name . '/' . $file, $time, $duration];
 
-                    if (!$this->bFirstLoad && $icnt >= $this->lastCount[$instance]) {
-                        foreach ($this->eventProcessor->clients as $client) {
-                            $client->send(json_encode([
-                                "cmd"   => "FileEvent",
-                                "instance" => ($instance - 3),
-                                "event" => $val
-                            ]));
-                        }
-                    }
-                    $icnt++;
-                    array_push($events, $val);
+            // echo "\n\ntime: $file";
+            // echo "\ntime: $time";
+            // echo "\ntime isset: " . isset($time);
+
+            if (empty($time)) {
+                continue;
+            }
+
+            $duration = round($fs / 24000, 0);
+            $val = [$name . '/' . $file, $time, $duration];
+
+            if (!$this->bFirstLoad && $icnt >= $this->lastCount[$instance]) {
+                foreach ($this->eventProcessor->clients as $client) {
+                    $client->send(json_encode([
+                        "cmd"   => "FileEvent",
+                        "instance" => ($instance - 3),
+                        "event" => $val
+                    ]));
                 }
             }
+            $icnt++;
+            array_push($events, $val);
         }
 
 
@@ -341,87 +571,44 @@ class DSDServer
     }
 
     // Read rtl_433 JSON events file
-    function getRtl433Events($instance)
+    function getRtl433Events($instance, $freq)
     {
-        $path = $this->config->Rtl433Path .  "rtl_345.json";
+        $path = $this->config->Rtl433Path .  "rtl_$freq.json";
 
         if (!file_exists($path)) {
             echo "\nSkipping non-existent file/directory: $path";
             return;
         }
 
-        $icnt = 0;
+        $iLineCount = shell_exec("wc -l " . " '$path'");
+        $iLineCount = intval($iLineCount);
+
+        $icnt = ($iLineCount - $this->config->RecentEvents) - 1;
+
         $events = array([]);
-        $strFileContents = file_get_contents($path, "r");
+        $strFileContents = shell_exec("tail -n " . $this->config->RecentEvents . " '$path'");
         $strFileContents = str_replace("\n", ",", $strFileContents);
         $strFileContents = substr($strFileContents, 0, strlen($strFileContents) - 1);
         $strFileContents = '[' . $strFileContents . ']';
         $jsonContents = json_decode($strFileContents);
 
-        $lastId = 0;
-        $lastState = '';
-        $lastTime = '';
-
         foreach ($jsonContents as $key => $value) {
 
-            // echo "Item: " . print_r($value);
-            $id = $value->id ?? '';
-            $time = $value->time;
-            $model = $value->model ?? '';
-            $channel = $value->channel ?? '';
-            $event = $value->event ?? '';
-
-            // Door State (Open,Close)
-            $state = $value->state ?? '';
-
-            // Weather Stations Alt Logic...
-            // If door state is empty - try to use weather station temperature in C or F units
-            if (empty($state) && !empty($value->temperature_F)) {
-                $state = $value->temperature_F . " °F";
-            }
-            if (empty($state) && !empty($value->temperature_C)) {
-                $state = $value->temperature_C . " °C";
-            }
-
-
-
-            $alarm = $value->alarm ?? '';
-            $tamper = $value->tamper ?? '';
-            $battery_ok = $value->battery_ok ?? '';
-            $heartbeat = $value->heartbeat ?? '';
-            $mod = $value->mod ?? '';
-            $freq = $value->freq ?? '';
-            $rssi = $value->rssi;
-            $snr = $value->snr;
-            $noise = $value->noise;
-
-            $timeDiff = (strtotime($time) - strtotime($lastTime));
-
-            // Skip if Mode id and state is the same and within 3 seconds
-            if ($lastId == $id && $lastState == $state && $timeDiff < 4) {
-                continue;
-            }
-
-            $lastId = $id;
-            $lastState = $state;
-            $lastTime = $time;
-
-            $val = [$id, $time, $model, $channel, $event, $state, $alarm, $tamper, $battery_ok, $heartbeat, $mod, $freq, $rssi, $snr, $noise];
-
             if (!$this->bFirstLoad && $icnt >= $this->lastCount[$instance]) {
+
 
                 foreach ($this->eventProcessor->clients as $client) {
 
                     $client->send(json_encode([
                         "cmd"   => "rtl433Event",
-                        "instance" => 0,
-                        "event" => $val
+                        "instance" => ($instance - 5),
+                        "event" => $value
                     ]));
                 }
             }
 
             $icnt++;
-            array_push($events, $val);
+            array_push($events, $value);
         }
 
 

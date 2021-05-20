@@ -1,0 +1,64 @@
+<IfModule mod_headers.c>
+Header always edit Set-Cookie (.*) "$1; SameSite=strict"
+</IfModule>
+
+RewriteEngine on
+RewriteBase /
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+
+RewriteRule ^error(.*)$ error.php?$1 [QSA]
+ErrorDocument 401 /error?error=401&qs=%{escape:%{REQUEST_URI}}
+ErrorDocument 404 /error?error=404&qs=%{escape:%{REQUEST_URI}}
+ErrorDocument 500 /error?error=500&qs=%{escape:%{REQUEST_URI}}
+
+RewriteRule ^logout(.*)$ logout.php [QSA]
+RewriteRule ^login(.*)$ login.php [QSA]
+RewriteRule ^dashboard(.*)$ index.php [QSA]
+RewriteRule ^heatmap(.*)$ heatmap.php [QSA]
+RewriteRule ^api(.*) api.php [QSA]
+
+# Deny Bad Actors
+Deny from 208.77.20.11
+Deny from 182.254.154.181
+
+#This is cloudflare.. 
+#Deny from 108.162.245.23
+#Deny from 108.162.245.26
+#Deny from 108.162.246.38
+#Deny from 108.162.245.69
+
+#
+# Cache Control
+#
+<IfModule mod_cache.c>
+    CacheLock on
+    CacheLockPath "/tmp/mod_cache-lock"
+    CacheLockMaxAge 5
+</IfModule>
+
+#Cache Expires for Fonts 1 month
+<IfModule mod_expires.c>
+ExpiresActive on
+# Embedded OpenType (EOT)
+ExpiresByType application/vnd.ms-fontobject         "access plus 1 month"
+ExpiresByType font/eot                              "access plus 1 month"
+
+# OpenType
+ExpiresByType font/opentype                         "access plus 1 month"
+ExpiresByType font/otf                              "access plus 1 month"
+
+# TrueType
+ExpiresByType application/x-font-ttf                "access plus 1 month"
+ExpiresByType font/ttf                              "access plus 1 month"
+
+# Web Open Font Format (WOFF) 1.0
+ExpiresByType application/font-woff                 "access plus 1 month"
+ExpiresByType application/x-font-woff               "access plus 1 month"
+ExpiresByType font/woff                             "access plus 1 month"
+
+# Web Open Font Format (WOFF) 2.0
+ExpiresByType application/font-woff2                "access plus 1 month"
+ExpiresByType font/woff2                            "access plus 1 month"
+</IfModule>
+			

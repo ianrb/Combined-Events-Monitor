@@ -14,17 +14,16 @@ class EventProcessor implements MessageComponentInterface
     public function __construct()
     {
         $this->clients = new \SplObjectStorage;
-        echo "DSD Server Started.\n";
+        echo "- CEM Process Started.\n";
     }
 
     // 
     // New WebSocket Connection Opened
     // 
-
     public function onOpen(ConnectionInterface $conn)
     {
 
-        // echo "New connection! ({$conn->resourceId})\n";
+        // echo "\nNew connection! ($conn->resourceId) - $conn->remoteAddress";
 
         try {
 
@@ -36,7 +35,8 @@ class EventProcessor implements MessageComponentInterface
                 parse_str($strPayload, $queryParameters);
 
                 if (empty($queryParameters['payload'])) {
-                    echo "\n- Socket Connection Rejected - Invalid/No Payload\n";
+                    echo "\e[0;31m\n- Socket Connection Rejected - Invalid/No Payload - ($conn->resourceId) - $conn->remoteAddress\e[0m\n";
+                    $conn->close();
                     return;
                 }
 
@@ -44,7 +44,14 @@ class EventProcessor implements MessageComponentInterface
                 parse_str($strPayload, $queryParameters);
 
                 if (strpos($strPayload, "token") === true) {
-                    echo "\n\n no token";
+                    echo "\e[0;31m\n- Socket Connection Rejected - Token not Specified - ($conn->resourceId) - $conn->remoteAddress\e[0m\n";
+                    $conn->close();
+                    return;
+                }
+
+                if (empty($queryParameters['username']) | empty($queryParameters['password'])) {
+                    echo "\e[0;31m\n- Socket Connection Rejected - Invalid/No Username/Password - ($conn->resourceId) - $conn->remoteAddress\e[0m\n";
+                    $conn->close();
                     return;
                 }
 
@@ -53,11 +60,11 @@ class EventProcessor implements MessageComponentInterface
 
                 // Close Connection and return if username and password do not match
                 if ($username != $this->objServer->config->AuthUsername | $password != $this->objServer->config->AuthPassword) {
-                    echo "\n- Socket Connection Rejected - Wrong Username or Password\n";
+                    echo "\e[0;31m\n- Socket Connection Rejected - Wrong Username or Password - ($conn->resourceId) - $conn->remoteAddress\e[0m\n";
                     $conn->close();
                     return;
                 } else {
-                    echo "\n- Socket Connection Accepted - Login Succeeded\n";
+                    echo "\e[0;32m\n- Socket Connection Accepted - Login Succeeded - ($conn->resourceId) - $conn->remoteAddress\e[0m\n";
                 }
             }
 
@@ -80,25 +87,42 @@ class EventProcessor implements MessageComponentInterface
 
                     if (($this->objServer->DDSEvents[$instance])) {
 
-                        $recentEvents = array_slice($this->objServer->DDSEvents[$instance], -$this->objServer->config->RecentEvents, $this->objServer->config->RecentEvents);
+                        $events = $this->objServer->DDSEvents[$instance];
 
                         $conn->send(json_encode([
                             "cmd"   => "DSDEvents",
                             "instance" => $instance,
-                            "events"   => $recentEvents,
+                            "events"   => $events,
                         ]));
                     }
                 }
             }
 
             // DSD Recent LRRP
-
             if (($this->objServer->DDSLRRPEvents)) {
 
+                // $eventCount = count($this->objServer->DDSLRRPEvents) - 1;
+                // if ($eventCount > $this->objServer->config->RecentEvents) {
+                //     $eventCount = $this->objServer->config->RecentEvents;
+                // }
+                // $recentEvents = array_slice($this->objServer->DDSLRRPEvents, -$eventCount, $eventCount);
                 $recentEvents = array_slice($this->objServer->DDSLRRPEvents, -$this->objServer->config->RecentEvents, $this->objServer->config->RecentEvents);
 
+
                 $conn->send(json_encode([
-                    "cmd"   => "DSDRecentLRRP",
+                    "cmd"   => "DSDLRRPs",
+                    "events" => $recentEvents
+                ]));
+            }
+
+
+            // Aircraft dump1090
+            if (($this->objServer->AircraftEvents)) {
+
+                $recentEvents = array_slice($this->objServer->AircraftEvents, -$this->objServer->config->RecentEvents, $this->objServer->config->RecentEvents);
+
+                $conn->send(json_encode([
+                    "cmd"   => "AircraftEvents",
                     "events" => $recentEvents
                 ]));
             }
@@ -112,7 +136,11 @@ class EventProcessor implements MessageComponentInterface
 
                     if (($this->objServer->FileEvents[$instance])) {
 
-                        $recentEvents = array_slice($this->objServer->FileEvents[$instance], -$this->objServer->config->RecentEvents, $this->objServer->config->RecentEvents);
+                        $eventCount = count($this->objServer->FileEvents[$instance]) - 1;
+                        if ($eventCount > $this->objServer->config->RecentEvents) {
+                            $eventCount = $this->objServer->config->RecentEvents;
+                        }
+                        $recentEvents = array_slice($this->objServer->FileEvents[$instance], -$eventCount, $eventCount);
 
                         $conn->send(json_encode([
                             "cmd"   => "FileEvents",
@@ -125,14 +153,26 @@ class EventProcessor implements MessageComponentInterface
 
 
             // New Client - Send recent rtl_433 Events
-            if (($this->objServer->Rtl433Events)) {
+            $iRtl433 = ($this->objServer->Rtl433TotalInstances - 1);
+            for ($instance = 0; $instance <= $iRtl433; $instance++) {
 
-                $recentEvents = array_slice($this->objServer->Rtl433Events[0], -$this->objServer->config->RecentEvents, $this->objServer->config->RecentEvents);
-                $conn->send(json_encode([
-                    "cmd"   => "rtl433Events",
-                    "instance" => 0,
-                    "events"   => $recentEvents,
-                ]));
+                if ($instance < count($this->objServer->Rtl433Events)) {
+
+                    if (($this->objServer->Rtl433Events[$instance])) {
+
+                        $eventCount = count($this->objServer->Rtl433Events[$instance]) - 1;
+                        if ($eventCount > $this->objServer->config->RecentEvents) {
+                            $eventCount = $this->objServer->config->RecentEvents;
+                        }
+                        $recentEvents = array_slice($this->objServer->Rtl433Events[$instance], -$eventCount, $eventCount);
+
+                        $conn->send(json_encode([
+                            "cmd"   => "rtl433Events",
+                            "instance" => $instance,
+                            "events"   => $recentEvents,
+                        ]));
+                    }
+                }
             }
         } catch (\Exception $e) {
             echo "Error onOpen: " .   $e->getMessage() . "\n";

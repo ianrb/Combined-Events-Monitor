@@ -39,22 +39,10 @@ class ComposerStaticInit1c8909a20bd4bc14f619e3dd256fcef1
         'P' => 
         array (
             'Psr\\Http\\Message\\' => 17,
-            'PHPMailer\\PHPMailer\\' => 20,
-        ),
-        'M' => 
-        array (
-            'MaxMind\\WebService\\' => 19,
-            'MaxMind\\Exception\\' => 18,
-            'MaxMind\\Db\\' => 11,
         ),
         'G' => 
         array (
             'GuzzleHttp\\Psr7\\' => 16,
-            'GeoIp2\\' => 7,
-        ),
-        'C' => 
-        array (
-            'Composer\\CaBundle\\' => 18,
         ),
     );
 
@@ -115,33 +103,9 @@ class ComposerStaticInit1c8909a20bd4bc14f619e3dd256fcef1
         array (
             0 => __DIR__ . '/..' . '/psr/http-message/src',
         ),
-        'PHPMailer\\PHPMailer\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
-        ),
-        'MaxMind\\WebService\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/maxmind/web-service-common/src/WebService',
-        ),
-        'MaxMind\\Exception\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/maxmind/web-service-common/src/Exception',
-        ),
-        'MaxMind\\Db\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/maxmind-db/reader/src/MaxMind/Db',
-        ),
         'GuzzleHttp\\Psr7\\' => 
         array (
             0 => __DIR__ . '/..' . '/guzzlehttp/psr7/src',
-        ),
-        'GeoIp2\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/geoip2/geoip2/src',
-        ),
-        'Composer\\CaBundle\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/composer/ca-bundle/src',
         ),
     );
 
@@ -156,6 +120,8 @@ class ComposerStaticInit1c8909a20bd4bc14f619e3dd256fcef1
     );
 
     public static $classMap = array (
+        'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
+        'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'Stringable' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Stringable.php',
         'UnhandledMatchError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/UnhandledMatchError.php',
         'ValueError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/ValueError.php',
